@@ -1,0 +1,5 @@
+*.pyc
+tags
+build
+ez_setup.py
+pytbeaglehon/ccore/disc_state_cont_time_model.so
