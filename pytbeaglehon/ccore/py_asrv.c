@@ -38,41 +38,6 @@ PyTypeObject asrv_type = {
     /* implied by ISO C: all zeros thereafter, i.e., no other method */
 };
 
-
-ASRVObj* asrv_obj_new(unsigned dim, int style, double param)  {
-	const unsigned arr_len = dim*sizeof(double);
-	assert(dim > 1);
-	PYTBEAGLEHON_DEBUG_PRINTF("In asrv_obj_new\n");
-	ASRVObj * asrh = PyObject_New(ASRVObj, &asrv_type);
-	if (asrh) {
-		asrh->n = dim;
-		asrh->val = 0L;
-		asrh->freq = 0L;
-		asrh->style = style;
-		asrh->param = param;
-		if (dim > 0) {
-			asrh->val = (double*)malloc(arr_len*sizeof(double));
-			if (asrh->val == 0L) {
-				PyErr_NoMemory();
-				goto errorExit;
-			}
-			asrh->freq = (double*)malloc(arr_len*sizeof(double));
-			if (asrh->val == 0L) {
-				goto errorExit;
-			}
-		internal_asrv_set_shape(asrh, param);
-		}
-	}
-	else {
-		PYTBEAGLEHON_DEBUG_PRINTF("PyObject_New returned 0L\n");
-	}
-	return asrh;
-	errorExit:
-		PYTBEAGLEHON_DEBUG_PRINTF("In asrv_obj_new errorExit\n");
-		asrv_obj_dtor(asrh);
-		return 0L;
-}
-
 /*******************************************************************************
  * ASRV adaptor functions
  */

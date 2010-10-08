@@ -4,3 +4,9 @@ build
 ez_setup.py
 pytbeaglehon/ccore/disc_state_cont_time_model.so
 pytbeaglehon.egg-info
+Makefile
+*Makefile.in
+configure
+config.guess
+aclocal.m4
+autom4te.cache

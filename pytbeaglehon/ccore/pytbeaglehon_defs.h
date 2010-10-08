@@ -38,7 +38,6 @@ extern "C"
 #	define PYTBEAGLEHON_DEBUG_PRINTF1(v,a) (printf(v,a))
 #	define PYTBEAGLEHON_DEBUG_PRINTF2(v,a,aa) (printf(v,a,aa))
 #	define PYTBEAGLEHON_DEBUG_PRINTF3(v,a,aa,aaa) (printf(v,a,aa,aaa))
-
 #else
 
 #	define PYTBEAGLEHON_DEBUG_PRINTF(v)
@@ -47,6 +46,9 @@ extern "C"
 #	define PYTBEAGLEHON_DEBUG_PRINTF3(v,a,aa,aaa)
 
 #endif
+
+#include <assert.h>
+#define PYTBEAGLE_ASSERT(x) assert(x);
 
 
 

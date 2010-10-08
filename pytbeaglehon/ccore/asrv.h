@@ -27,14 +27,21 @@ typedef struct {
 				  1 ="use mean for rate categ"
 			   */
 	double param; /*shape param of the gamma distribution -- this is a hack*/
-	double * val;
+	double * rate;
 	double * freq;
 } ASRVObj;
 
 
-
+/* `style` should be:
+        0 for `categories of the gamma represented by their median`, or
+        1 for `categories of the gamma represented by their mean`.
+ */
 ASRVObj* asrv_obj_new(unsigned dim, int style, double param);
 void asrv_obj_dtor(ASRVObj* asrh);
+
+/* sets the shape parameter of the gamma distribution and recalculates the 
+    rates for the categories
+*/
 void internal_asrv_set_shape(ASRVObj *asrh, double val);
 
 

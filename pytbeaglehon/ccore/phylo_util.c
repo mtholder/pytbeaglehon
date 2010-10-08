@@ -2,7 +2,7 @@
 #include "phylo_util.h"
 #include <float.h>
 #include <math.h>
-
+#include <stdlib.h>
 
 /**
   pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
