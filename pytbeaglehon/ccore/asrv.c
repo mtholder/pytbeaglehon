@@ -35,12 +35,11 @@ void asrv_obj_dtor(ASRVObj * asrh) {
 
 
 
-static ASRVObj * private_asrv_obj_init(ASRVObj *, unsigned dim, int style, double param);
 
 /* fills in the fields of asrh and returns it (or returns null if there was
     an allocation error filling the fields).
 */
-static ASRVObj * private_asrv_obj_init(ASRVObj * asrh, unsigned dim, int style, double param) {
+ASRVObj * private_asrv_obj_init(ASRVObj * asrh, unsigned dim, int style, double param) {
     PYTBEAGLE_ASSERT(asrh);
     const unsigned arr_len = dim*sizeof(double);
     asrh->n = dim;
@@ -64,6 +63,30 @@ static ASRVObj * private_asrv_obj_init(ASRVObj * asrh, unsigned dim, int style, 
 }
 
 
+
+
+
+#if defined(BUILDING_FOR_PYTHON) && BUILDING_FOR_PYTHON
+/* Forward declare the python type object*/
+PyTypeObject asrv_type;
+
+/*******************************************************************************
+ * Python type wrappers
+ */
+
+PyTypeObject asrv_type = {
+    PyObject_HEAD_INIT(0)	  	/* initialize to 0 to ensure Win32 portability  */
+    0,						  	/* ob_size */
+    "asrv_obj",	/* tp_name */
+    sizeof(ASRVObj),		/* tp_basicsize */
+    0,						  	/* tp_itemsize */
+    /* methods */
+    (destructor)asrv_obj_dtor, /* tp_dealloc */
+    /* implied by ISO C: all zeros thereafter, i.e., no other method */
+};
+
+#endif  /*defined(BUILDING_FOR_PYTHON) && BUILDING_FOR_PYTHON */
+
 ASRVObj* asrv_obj_new(unsigned dim, int style, double param)  {
     PYTBEAGLE_ASSERT(dim > 1);
     PYTBEAGLEHON_DEBUG_PRINTF("In asrv_obj_new\n");
@@ -81,6 +104,7 @@ ASRVObj* asrv_obj_new(unsigned dim, int style, double param)  {
         asrv_obj_dtor(asrh);
         return 0L;
 }
+
 
 
 

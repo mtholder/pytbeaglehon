@@ -20,24 +20,6 @@
 
 
 
-/* Forward declare the python type object*/
-PyTypeObject asrv_type;
-
-/*******************************************************************************
- * Python type wrappers
- */
-
-PyTypeObject asrv_type = {
-    PyObject_HEAD_INIT(0)	  	/* initialize to 0 to ensure Win32 portability  */
-    0,						  	/* ob_size */
-    "asrv_obj",	/* tp_name */
-    sizeof(ASRVObj),		/* tp_basicsize */
-    0,						  	/* tp_itemsize */
-    /* methods */
-    (destructor)asrv_obj_dtor, /* tp_dealloc */
-    /* implied by ISO C: all zeros thereafter, i.e., no other method */
-};
-
 /*******************************************************************************
  * ASRV adaptor functions
  */
@@ -91,5 +73,5 @@ PyObject* casrvo_get_rates(PyObject *self, PyObject *args) {
 	if (!PyArg_ParseTuple(args, "O!", &asrv_type, &asrh_py_obj))
 		return 0L;
 	asrv = (ASRVObj *)(asrh_py_obj);
-	return doubleArrayToList(asrv->val, asrv->n);
+	return doubleArrayToList(asrv->rate, asrv->n);
 }

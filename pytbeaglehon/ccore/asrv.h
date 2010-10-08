@@ -48,6 +48,11 @@ void internal_asrv_set_shape(ASRVObj *asrh, double val);
 
 
 
+/* used internally in the library, not to be called by client code */
+ASRVObj * private_asrv_obj_init(ASRVObj *, unsigned dim, int style, double param);
+
+
+
 
 #ifdef __cplusplus
 }
