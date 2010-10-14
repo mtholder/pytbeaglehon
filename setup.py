@@ -123,6 +123,8 @@ if using_ncl:
 
 src_prefix = "pytbeaglehon/ccore"
 ext_source_files =[ "asrv.c",
+                    "calc_instance.c",
+                    "discrete_state_model.c",
                     "phylo_util.c",
                     "py_asrv.c",
                     "py_beagle.c", 

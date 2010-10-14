@@ -53,7 +53,34 @@ AC_ARG_WITH(
 	])
 
 
-AC_SUBST(CXXFLAGS)
+BEAGLE_PREFIX="/usr/local"
+
+AC_ARG_WITH(
+	[beaglelib],
+	AC_HELP_STRING(
+		[--with-beaglelib=DIR],
+		[Specify the prefix directory for the beaglelib (the parent of the include and lib directories).]
+		),
+	[
+	if ! test "$withval" = "yes" -o "$withval" = "no" ; then
+		BEAGLE_PREFIX="$withval"
+	fi
+	])
+
+if ! test -d "$BEAGLE_PREFIX/include/libhmsbeagle-1.0" ; then
+	AC_MSG_ERROR([beaglelib version 1.0 or higher is a prerequisite for building pytbeaglehon. Expecting a directory called $BEAGLE_PREFIX/include/libhmsbeagle-1.0, verify that the argument to --with-beagle is correct.])
+else
+	if ! test -f "$NCL_INC_DIR/ncl/nxsdefs.h" ; then
+    	AC_MSG_ERROR([beaglelib version 1.0 or higher is a prerequisite for building pytbeaglehon. Expecting a directory called $BEAGLE_PREFIX/include/libhmsbeagle-1.0, verify that the argument to --with-beagle is correct.])
+	fi
+fi
+
+LIBS="$LIBS -lncl -lhmsbeagle"
+LDFLAGS="$LDFLAGS -L$BEAGLE_PREFIX/lib"
+CPPFLAGS="-I$BEAGLE_PREFIX/include/libhmsbeagle-1.0"
+AC_SUBST(BEAGLE_PREFIX)
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([float.h stdlib.h])

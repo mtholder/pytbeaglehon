@@ -13,6 +13,7 @@
 */
 #include "py_beagle.h"
 #include "py_asrv.h"
+#include "calc_instance.h"
 
 
 /* exception class (will be assigned in initdsct_model) */
@@ -20,6 +21,94 @@ static PyObject * CLAUnderflowError;
 
 
 
+
+static PyObject* cpytbeaglehon_init(PyObject *self, PyObject *args) {
+	int numLeaves;
+	long numPatterns;
+	int num_states;
+	int num_rate_categories;
+	int num_state_code_arrays;
+	int numPartialStructs;
+	int num_model_matrices;
+	int numProbMats;
+	int numEigenStorage;
+	int num_rescalings_multipliers;
+	int resource_arg;
+	long resource_flag;
+	long handle;
+	if (!PyArg_ParseTuple(args, "iliiiiiiiiil", &numLeaves,
+											  &numPatterns,
+											  &num_states,
+											  &num_rate_categories,
+											  &num_state_code_arrays,
+											  &numPartialStructs,
+											  &num_model_matrices,
+											  &numProbMats,
+											  &numEigenStorage,
+											  &num_rescalings_multipliers,
+											  &resource_arg,
+											  &resource_flag)) {
+		return 0L;
+	}
+	if (numLeaves < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of leaves cannot be negative");
+		return 0;
+	}
+	if (numPatterns < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of patterns cannot be negative");
+		return 0;
+	}
+	if (num_states < 2) {
+		PyErr_SetString(PyExc_ValueError, "The number of states cannot be less than 1");
+		return 0;
+	}
+	if (num_rate_categories < 1) {
+		PyErr_SetString(PyExc_ValueError, "The number of rate categories cannot be less than 1");
+		return 0;
+	}
+	if (num_state_code_arrays < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of state code arrays cannot be negative");
+		return 0;
+	}
+	if (numPartialStructs < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of partial likelihood arrays cannot be negative");
+		return 0;
+	}
+	if (num_model_matrices < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of model matrices cannot be negative");
+		return 0;
+	}
+	if (numProbMats < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of transition probability matrices cannot be negative");
+		return 0;
+	}
+	if (numEigenStorage < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of eigen solutions cannot be negative");
+		return 0;
+	}
+	if (num_rescalings_multipliers < 0) {
+		PyErr_SetString(PyExc_ValueError, "The number of rescaling buffers cannot be negative");
+		return 0;
+	}
+	handle = create_likelihood_calc_instance(numLeaves,
+											 numPatterns,
+											 num_states,
+											 num_rate_categories,
+											 num_state_code_arrays,
+											 numPartialStructs,
+											 num_model_matrices,
+											 numProbMats,
+											 numEigenStorage,
+											 num_rescalings_multipliers,
+											 resource_arg,
+											 resource_flag);
+	if (handle < 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not allocate likelihood_calculator_instance\n");
+		PyErr_NoMemory();
+		return 0L;
+	}
+	return PyInt_FromLong(handle);
+}
 
 
 
@@ -74,13 +163,13 @@ static PyMethodDef dsct_model_module_functions[] = {
 		"Queries installed libraries for the number of possible likelihood computational configurations"},
 	{"get_resource_info", get_resource_info, METH_VARARGS,
 		"Takes an integer, and returns a tuple of (resourceNumber, flags, name, implName) for that resource"},
-	{"cphyprob_init", cphyprob_init, METH_VARARGS,
+	{"cpytbeaglehon_init", cpytbeaglehon_init, METH_VARARGS,
 		"Creates an new instance of a likelihood calculation context (allocates storage, etc).  Returns a handle that must be used to provide an \"address space\" for the indices in most other cPhyProb method calls."},
 	{"cphyprob_free", cphyprob_free, METH_VARARGS,
 		"Frees memory associated with a LikeCalculatorInstance"},
 
 
-	/* The following methods REQUIRE a cphyprob calc context instance from cphyprob_init as the first argument */
+	/* The following methods REQUIRE a cphyprob calc context instance from cpytbeaglehon_init as the first argument */
 	{"calc_pmat", ccalc_pmat,	 METH_VARARGS,
 		"Calculates a P-Matrix from a Q-matrix and branch length.\nTakes a pmat_array_type, dsct_model_type, and branch length"},
 	{"calc_pmat_array", ccalc_pmat_array,	 METH_VARARGS,

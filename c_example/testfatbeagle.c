@@ -1,4 +1,5 @@
 #include "pytbeaglehon/ccore/asrv.h"
+#include "pytbeaglehon/ccore/calc_instance.h"
 #include <stdlib.h>
 #include <stdio.h>
 const double TOL = 1e-5;
@@ -38,6 +39,117 @@ void asrv_obj_dtor(ASRVObj* asrh);
 void internal_asrv_set_shape(ASRVObj *asrh, double val);
 
 
+void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
+    char n[81];
+    char implName[81];
+    char description[81];
+    long optsFlags, reqFlags, instanceHandle1, instanceHandle2;
+    int rc;
+    unsigned i;
+    if (gVerbose)
+        fprintf(stderr, "Testing CalcInstances\n");
+    i = getNumComputationalResources();
+    fprintf(stderr, "%d computational resource(s) available\n", i);
+    if (i == 0) {
+        *numErrors += 1;
+        fprintf(stderr, "%d computational resources available\n", i);
+    }
+    else
+        *numPasses += 1;
+    rc = getComputationalResourceDetails(0, n, description, &optsFlags, &reqFlags);
+    if (rc == 0) {
+        *numPasses += 1;
+        if (gVerbose)
+            fprintf(stderr, "First resource details:\n  name = %s\n  desc = %s\n  optFlags  = %ld\n  reqFlags = %ld\n", n, description, optsFlags, reqFlags);
+    }
+    else {
+        *numErrors += 1;
+        fprintf(stderr, "getComputationalResourceDetails returned %d\n", rc);
+    }
+    rc = getComputationalResourceDetails(i, n, description, &optsFlags, &reqFlags);
+    if (rc != 0) {
+        *numPasses += 1;
+    }
+    else {
+        *numErrors += 1;
+        fprintf(stderr, "getComputationalResourceDetails did not return an error code when resource %d was used as an arg.\n", i);
+    }
+
+
+    instanceHandle1 = createLikelihoodCalcInstance(4, /* leaves*/
+            10, /* patterns */
+            0L, /* pattern weights*/
+            4, /* states */
+            4, /* stateCodeArrays */
+            10,  /* partials */
+            1, /* distinct models (q-matrices) to allocated */
+            0L, /* ASRVObj array */
+            10, /* transition probability matrices */ 
+            2, /* num of eigen solutions stored */ 
+            0, /* num rescalers */
+            0, /* the index of the computational resource to use */
+            reqFlags); /* the beagle flags (see above) required of the computational resource */
+    if (instanceHandle1 >= 0) {
+        *numPasses += 1;
+    }
+    else {
+        *numErrors += 1;
+        fprintf(stderr, "createLikelihoodCalcInstance returned error code %d.\n", i);
+    }
+    instanceHandle2 = createLikelihoodCalcInstance(4, /* leaves*/
+            10, /* patterns */
+            0L, /* pattern weights*/
+            4, /* states */
+            4, /* stateCodeArrays */
+            10,  /* partials */
+            1, /* distinct models (q-matrices) to allocated */
+            0L, /* ASRVObj array */
+            10, /* transition probability matrices */ 
+            2, /* num of eigen solutions stored */ 
+            0, /* num rescalers */
+            0, /* the index of the computational resource to use */
+            reqFlags); /* the beagle flags (see above) required of the computational resource */
+    if (instanceHandle2 >= 0) {
+        *numPasses += 1;
+    }
+    else {
+        *numErrors += 1;
+        fprintf(stderr, "createLikelihoodCalcInstance returned error code %d.\n", i);
+    }
+    if (instanceHandle2 != instanceHandle1) {
+        *numPasses += 1;
+    }
+    else {
+        *numErrors += 1;
+        fprintf(stderr, "duplicate instance handles returned by createLikelihoodCalcInstance.\n", i);
+    }
+    if (instanceHandle1 >= 0) {
+        if (freeLikeCalculatorInstance(instanceHandle1) < 0) {
+            *numErrors += 1;
+            fprintf(stderr, "freeLikeCalculatorInstance failed.\n", i);
+        }   
+        else
+            *numPasses += 1;
+    }
+    if (instanceHandle2 >= 0) {
+        if (freeLikeCalculatorInstance(instanceHandle2) < 0) {
+            *numErrors += 1;
+            fprintf(stderr, "freeLikeCalculatorInstance failed.\n", i);
+        }   
+        else
+            *numPasses += 1;
+    }
+    if (instanceHandle1 >= 0) {
+        if (freeLikeCalculatorInstance(instanceHandle1) >= 0) {
+            *numErrors += 1;
+            fprintf(stderr, "double call to freeLikeCalculatorInstance did not fail.\n", i);
+        }
+        else
+            *numPasses += 1;
+    }
+
+}
+
 void testASRV(unsigned * numPasses, unsigned * numErrors) {
     if (gVerbose)
         fprintf(stderr, "Testing ASRV\n");
@@ -65,6 +177,7 @@ void testASRV(unsigned * numPasses, unsigned * numErrors) {
         asrv_obj_dtor(asrv);
     }
 }
+
 int main(int argc, char * argv[]) {
     unsigned numErrors = 0;
     unsigned numPasses = 0;
@@ -76,7 +189,7 @@ int main(int argc, char * argv[]) {
         }
     }
     testASRV(&numPasses, &numErrors);
-    
+    testCalcInstances(&numPasses, &numErrors);
     fprintf(stderr, "%d failures out of %d tests.\n", numErrors, numErrors + numPasses);
     return numErrors;
 }

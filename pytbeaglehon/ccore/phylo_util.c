@@ -20,6 +20,18 @@
 
 */
 
+void ** mallocZeroedPointerArray(unsigned i) {
+	unsigned j;
+	void ** p = (void**) malloc(i*sizeof(void *));
+	if (p) {
+		for (j = 0; j < i; ++j)
+			p[j] = 0L;
+	}
+	return p;
+}
+
+
+
 static void CopyDoubleMatrices (int dim, const double **from, double **to);
 static int compute_eigen_system (int dim, double **a, double *v, double *vi, double **u, int *iwork, double *dwork, unsigned *is_complex);
 static int InvertMatrix (int dim,
