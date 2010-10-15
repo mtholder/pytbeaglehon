@@ -12,8 +12,9 @@
 
 */
 #include "phylo_util.h"
-#include "py_beagle.h"
 #include "py_asrv.h"
+#include "py_beagle.h"
+#include "py_util.h"
 #include "asrv.h"
 #include "calc_instance.h"
 
@@ -21,8 +22,17 @@
 /* exception class (will be assigned in initdsct_model) */
 static PyObject * CLAUnderflowError;
 
-
-
+static PyObject* cpytbeaglehon_free(PyObject *self, PyObject *args) {
+	int handle;
+	if (!PyArg_ParseTuple(args, "l", &handle)) {
+		return 0L;
+	}
+	if (freeLikeCalculatorInstance(handle) != 0) {
+		PyErr_SetString(PyExc_ValueError, "Error freeing calculation instance");
+		return 0L;
+	}
+	return none();
+}
 static PyObject* cpytbeaglehon_init(PyObject *self, PyObject *args) {
 	int numLeaves;
 	long numPatterns;
@@ -268,7 +278,9 @@ static PyMethodDef dsct_model_module_functions[] = {
 		"initializer -- takes a list of lists.  Returns a StateSetLookupStruct."},
 #endif
 	{"cpytbeaglehon_init", cpytbeaglehon_init, METH_VARARGS,
-		"Creates an new instance of a likelihood calculation context (allocates storage, etc).  Returns a handle that must be used to provide an \"address space\" for the indices in most other cPhyProb method calls."},
+		"Creates an new instance of a likelihood calculation context (allocates storage, etc).  Returns a handle that must be used to provide an \"address space\" for the indices in most other cPhyProb method calls. It takes the following arguments:\n    numLeaves\n    numPatterns\n    patternWeightList\n    numStates\n    numStateCodeArrays\n    numPartialStructs\n    numInstRateModels\n    asrvList\n    numProbMats\n    numEigenStorage\n    numRescalingsMultipliers\n    resourceArg\n    resourceFlag\n"},
+	{"cpytbeaglehon_free", cpytbeaglehon_free, METH_VARARGS,
+		"frees a previously allocated instance of a likelihood calculation context"},
 
 
 
