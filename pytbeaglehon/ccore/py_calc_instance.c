@@ -32,23 +32,23 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 	int resourceIndex;
 	long resourcePref, resourceReq;
 	long handle;
-	PyObject * patternWeightList = 0L;
+	PyObject * patternWeightTuple = 0L;
 	double * patternWeights = 0L;
 	ASRVObj ** asrvObjectArray = 0L;
-	PyObject * asrvList = 0L;
+	PyObject * asrvTuple = 0L;
 	PyObject * fItem = 0L;
 	PyObject * item = 0L;
 	unsigned listSize, i;
 	if (!PyArg_ParseTuple(args, "ilO!iiiiO!iiiill", &numLeaves,
 											  &numPatterns,
-											  &PyList_Type,
-											  &patternWeightList,
+											  &PyTuple_Type,
+											  &patternWeightTuple,
 											  &numStates,
 											  &numStateCodeArrays,
 											  &numPartialStructs,
 											  &numInstRateModels,
-											  &PyList_Type,
-											  &asrvList,
+											  &PyTuple_Type,
+											  &asrvTuple,
 											  &numProbMats,
 											  &numEigenStorage,
 											  &numRescalingsMultipliers,
@@ -65,10 +65,10 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		PyErr_SetString(PyExc_ValueError, "The number of patterns cannot be negative");
 		return 0;
 	}
-    listSize = (unsigned) PyList_Size(patternWeightList);
+    listSize = (unsigned) PyTuple_Size(patternWeightTuple);
 	if (listSize > 0) {
 	    if (listSize < numPatterns) {
-            PyErr_SetString(PyExc_IndexError, "The length of the patternWeightList cannot be less than 'numPatterns'");
+            PyErr_SetString(PyExc_IndexError, "The length of the patternWeightTuple cannot be less than 'numPatterns'");
             return 0L;
         }
         patternWeights = (double *)malloc(numPatterns*sizeof(double));
@@ -78,16 +78,16 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		    goto errorExit;
         }
         for (i = 0; i < numPatterns; ++i) {
-            item = PyList_GetItem(patternWeightList, i);
+            item = PyTuple_GetItem(patternWeightTuple, i);
             if (item == 0L) {
-                PyErr_SetString(PyExc_IndexError, "Could not extract an item from patternWeightList");
+                PyErr_SetString(PyExc_IndexError, "Could not extract an item from patternWeightTuple");
     		    goto errorExit;
             }
             Py_INCREF(item);
             fItem = PyNumber_Float(item);
             if (fItem == 0L) {
                 Py_DECREF(item);
-                PyErr_SetString(PyExc_IndexError, "Could not extract a float from patternWeightList");
+                PyErr_SetString(PyExc_IndexError, "Could not extract a float from patternWeightTuple");
     		    goto errorExit;
             }
             patternWeights[i] = PyFloat_AsDouble(item);
@@ -113,7 +113,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		PyErr_SetString(PyExc_ValueError, "The number of model instantaneous relative rate matrices cannot be negative");
         goto errorExit;
 	}
-    listSize = (unsigned) PyList_Size(asrvList);
+    listSize = (unsigned) PyTuple_Size(asrvTuple);
 	if (listSize > 0) {
 	    if (listSize < numInstRateModels) {
             PyErr_SetString(PyExc_IndexError, "The length of the asrv objects cannot be less than 'asrvObjectArray'");
@@ -126,15 +126,15 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		    goto errorExit;
         }
         for (i = 0; i < numInstRateModels; ++i) {
-            item = PyList_GetItem(asrvList, i);
+            item = PyTuple_GetItem(asrvTuple, i);
             if (item == 0L) {
-                PyErr_SetString(PyExc_IndexError, "Could not extract an item from asrvList");
+                PyErr_SetString(PyExc_IndexError, "Could not extract an item from asrvTuple");
     		    goto errorExit;
             }
             Py_INCREF(item);
             if (!PyType_IsSubtype(item->ob_type, &asrv_type)) {
                 Py_DECREF(item);
-                PyErr_SetString(PyExc_IndexError, "Could not extract a ASRVObj from asrvList");
+                PyErr_SetString(PyExc_IndexError, "Could not extract a ASRVObj from asrvTuple");
     		    goto errorExit;
             }
             asrvObjectArray[i] = (ASRVObj *) item;

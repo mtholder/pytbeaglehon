@@ -19,7 +19,7 @@ class LCETest(unittest.TestCase):
             num_states=4,
             num_state_code_arrays=5,
             num_partials=11,
-            num_inst_rate_matrices=2,
+            num_model_matrices=2,
             #asrv_list
             num_prob_matrices=3,
             num_eigen_storage_structs=7,
@@ -40,11 +40,11 @@ class LCETest(unittest.TestCase):
 
     def test_lazy_init(self):
         lc_env = LCE()
-        self.assertFalse(lc_env._initialized)
+        self.assertFalse(lc_env._incarnated)
     def test_init(self):
         lc_env = self.get_inst()
         lc_env._do_beagle_init() # trigger initialization
-        self.assertTrue(lc_env._initialized)
+        self.assertTrue(lc_env._incarnated)
     def test_num_resources(self):
         self.assertTrue(LCE.get_num_comp_resources() > 0)
 # pylint: disable-msg=C0103
