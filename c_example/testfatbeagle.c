@@ -42,7 +42,7 @@ void internal_asrv_set_shape(ASRVObj *asrh, double val);
 void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     char n[81];
     char description[81];
-    long optsFlags, reqFlags, instanceHandle1, instanceHandle2;
+    long optsFlags, reqFlags, prefFlags, instanceHandle1, instanceHandle2;
     int rc;
     unsigned i;
     if (gVerbose)
@@ -87,6 +87,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
             2, /* num of eigen solutions stored */ 
             0, /* num rescalers */
             0, /* the index of the computational resource to use */
+            prefFlags,
             reqFlags); /* the beagle flags (see above) required of the computational resource */
     if (instanceHandle1 >= 0) {
         *numPasses += 1;
@@ -106,7 +107,8 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
             10, /* transition probability matrices */ 
             2, /* num of eigen solutions stored */ 
             0, /* num rescalers */
-            0, /* the index of the computational resource to use */
+            -1, /* -1 should mean "use any resoure" */
+            prefFlags,
             reqFlags); /* the beagle flags (see above) required of the computational resource */
     if (instanceHandle2 >= 0) {
         *numPasses += 1;

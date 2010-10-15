@@ -16,190 +16,11 @@
 #include "py_beagle.h"
 #include "py_util.h"
 #include "asrv.h"
-#include "calc_instance.h"
+#include "py_calc_instance.h"
 
 
 /* exception class (will be assigned in initdsct_model) */
 static PyObject * CLAUnderflowError;
-
-static PyObject* cpytbeaglehon_free(PyObject *self, PyObject *args) {
-	long handle;
-	if (!PyArg_ParseTuple(args, "l", &handle)) {
-		return 0L;
-	}
-	if (freeLikeCalculatorInstance(handle) != 0) {
-		PyErr_SetString(PyExc_ValueError, "Error freeing calculation instance");
-		return 0L;
-	}
-	return none();
-}
-static PyObject* cpytbeaglehon_init(PyObject *self, PyObject *args) {
-	int numLeaves;
-	long numPatterns;
-	int numStates;
-	int numStateCodeArrays;
-	int numPartialStructs;
-	int numInstRateModels;
-	int numProbMats;
-	int numEigenStorage;
-	int numRescalingsMultipliers;
-	int resourceArg;
-	long resourceFlag;
-	long handle;
-	PyObject * patternWeightList = 0L;
-	double * patternWeights = 0L;
-	ASRVObj ** asrvObjectArray = 0L;
-	PyObject * asrvList = 0L;
-	PyObject * fItem = 0L;
-	PyObject * item = 0L;
-	unsigned listSize, i;
-	if (!PyArg_ParseTuple(args, "ilO!iiiiO!iiiil", &numLeaves,
-											  &numPatterns,
-											  &PyList_Type,
-											  &patternWeightList,
-											  &numStates,
-											  &numStateCodeArrays,
-											  &numPartialStructs,
-											  &numInstRateModels,
-											  &PyList_Type,
-											  &asrvList,
-											  &numProbMats,
-											  &numEigenStorage,
-											  &numRescalingsMultipliers,
-											  &resourceArg,
-											  &resourceFlag)) {
-		return 0L;
-	}
-	if (numLeaves < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of leaves cannot be negative");
-		return 0;
-	}
-	if (numPatterns < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of patterns cannot be negative");
-		return 0;
-	}
-    listSize = (unsigned) PyList_Size(patternWeightList);
-	if (listSize > 0) {
-	    if (listSize < numPatterns) {
-            PyErr_SetString(PyExc_IndexError, "The length of the patternWeightList cannot be less than 'numPatterns'");
-            return 0L;
-        }
-        patternWeights = (double *)malloc(numPatterns*sizeof(double));
-        if (patternWeights == 0) {
-    		PYTBEAGLEHON_DEBUG_PRINTF("Could not allocate patternWeights in cpytbeaglehon_init\n");
-	    	PyErr_NoMemory();
-		    goto errorExit;
-        }
-        for (i = 0; i < numPatterns; ++i) {
-            item = PyList_GetItem(patternWeightList, i);
-            if (item == 0L) {
-                PyErr_SetString(PyExc_IndexError, "Could not extract an item from patternWeightList");
-    		    goto errorExit;
-            }
-            Py_INCREF(item);
-            fItem = PyNumber_Float(item);
-            if (fItem == 0L) {
-                Py_DECREF(item);
-                PyErr_SetString(PyExc_IndexError, "Could not extract a float from patternWeightList");
-    		    goto errorExit;
-            }
-            patternWeights[i] = PyFloat_AsDouble(item);
-            Py_DECREF(item);
-            Py_DECREF(fItem);
-        }
-	}
-
-
-	if (numStates < 2) {
-		PyErr_SetString(PyExc_ValueError, "The number of states cannot be less than 1");
-        goto errorExit;
-	}
-	if (numStateCodeArrays < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of state code arrays cannot be negative");
-        goto errorExit;
-	}
-	if (numPartialStructs < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of partial likelihood arrays cannot be negative");
-        goto errorExit;
-	}
-	if (numInstRateModels < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of model instantaneous relative rate matrices cannot be negative");
-        goto errorExit;
-	}
-    listSize = (unsigned) PyList_Size(asrvList);
-	if (listSize > 0) {
-	    if (listSize < numInstRateModels) {
-            PyErr_SetString(PyExc_IndexError, "The length of the asrv objects cannot be less than 'asrvObjectArray'");
-            return 0L;
-        }
-        asrvObjectArray = (ASRVObj **)mallocZeroedPointerArray(numInstRateModels);
-        if (asrvObjectArray == 0) {
-    		PYTBEAGLEHON_DEBUG_PRINTF("Could not allocate asrvObjectArray in cpytbeaglehon_init\n");
-	    	PyErr_NoMemory();
-		    goto errorExit;
-        }
-        for (i = 0; i < numInstRateModels; ++i) {
-            item = PyList_GetItem(asrvList, i);
-            if (item == 0L) {
-                PyErr_SetString(PyExc_IndexError, "Could not extract an item from asrvList");
-    		    goto errorExit;
-            }
-            Py_INCREF(item);
-            if (!PyType_IsSubtype(item->ob_type, &asrv_type)) {
-                Py_DECREF(item);
-                PyErr_SetString(PyExc_IndexError, "Could not extract a ASRVObj from asrvList");
-    		    goto errorExit;
-            }
-            asrvObjectArray[i] = (ASRVObj *) item;
-        }
-	}
-	if (numProbMats < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of transition probability matrices cannot be negative");
-        goto errorExit;
-	}
-	if (numEigenStorage < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of eigen solutions cannot be negative");
-        goto errorExit;
-	}
-	if (numRescalingsMultipliers < 0) {
-		PyErr_SetString(PyExc_ValueError, "The number of rescaling buffers cannot be negative");
-        goto errorExit;
-	}
-	handle = createLikelihoodCalcInstance(
-	        numLeaves,
-            numPatterns,
-            patternWeights,
-            numStates,
-            numStateCodeArrays,
-            numPartialStructs,
-            numInstRateModels,
-            (const ASRVObj **) asrvObjectArray,
-            numProbMats,
-            numEigenStorage,
-            numRescalingsMultipliers,
-            resourceArg,
-            resourceFlag);
-	if (handle < 0) {
-		PYTBEAGLEHON_DEBUG_PRINTF("Could not allocate likelihood_calculator_instance\n");
-		PyErr_NoMemory();
-		goto errorExit;
-	}
-	return PyInt_FromLong(handle);
-	errorExit:
-	    if (patternWeights != 0)
-	        free(patternWeights);
-	    if (asrvObjectArray != 0) {
-	        for (i = 0; i < numInstRateModels; ++i) {
-	            if (asrvObjectArray[i]) {
-	                Py_DECREF((PyObject *)asrvObjectArray[i]);
-	            }
-	        }
-	        free(asrvObjectArray);
-	    }
-	    return 0L;
-}
-
-
 
 
 static PyMethodDef dsct_model_module_functions[] = {
@@ -277,10 +98,16 @@ static PyMethodDef dsct_model_module_functions[] = {
 	{"cstate_set_lookup_ctor", cstate_set_lookup_ctor,	 METH_VARARGS,
 		"initializer -- takes a list of lists.  Returns a StateSetLookupStruct."},
 #endif
-	{"cpytbeaglehon_init", cpytbeaglehon_init, METH_VARARGS,
+    /* functions defined in py_calc_instance.h and imported in like_calc_environ.py */
+	{"cpytbeaglehon_init", cPytBeagleHonInit, METH_VARARGS,
 		"Creates an new instance of a likelihood calculation context (allocates storage, etc).  Returns a handle that must be used to provide an \"address space\" for the indices in most other cPhyProb method calls. It takes the following arguments:\n    numLeaves\n    numPatterns\n    patternWeightList\n    numStates\n    numStateCodeArrays\n    numPartialStructs\n    numInstRateModels\n    asrvList\n    numProbMats\n    numEigenStorage\n    numRescalingsMultipliers\n    resourceArg\n    resourceFlag\n"},
-	{"cpytbeaglehon_free", cpytbeaglehon_free, METH_VARARGS,
+	{"cpytbeaglehon_free", cPytBeagleHonFree, METH_VARARGS,
 		"frees a previously allocated instance of a likelihood calculation context"},
+	{"cget_num_comp_resources", pyGetNumComputationalResources, METH_VARARGS,
+		"Returns the number of beagle implementations (computational resources) that are installed"},
+	{"cget_comp_resource_info", pyGetResourceInfo, METH_VARARGS,
+		"Takes the index of the computational resource, and returns a tuple of the (name, description, supported_flags, required_flags) for the resource."},
+		
 
 
 
