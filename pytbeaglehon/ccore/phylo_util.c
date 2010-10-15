@@ -1,8 +1,10 @@
 #include "pytbeaglehon_defs.h"
 #include "phylo_util.h"
+#include <string.h>
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
+
 
 /**
   pytbeaglehon phylogenetic likelihood caluclations using beaglelib.

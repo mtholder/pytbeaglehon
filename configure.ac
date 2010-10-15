@@ -20,13 +20,9 @@ AC_CONFIG_SRCDIR([setup.py])
 # Checks for programs.
 AC_PROG_LN_S
 AC_PROG_CPP
+INP_CFLAGS="$CFLAGS"
 AC_PROG_CC
-
-
-INP_CXXFLAGS="$CXXFLAGS"
-AC_PROG_CXX
-# Initialize CXXFLAGS to prevent it from defaulting to "-g -O2"
-CXXFLAGS="$INP_CXXFLAGS -DUNIX -DNCL_CONST_FUNCS"
+CFLAGS="$INP_CFLAGS"
 
 # required because we are building a library 
 AC_PROG_RANLIB

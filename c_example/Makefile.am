@@ -1,6 +1,6 @@
 LDADD       = @top_builddir@/pytbeaglehon/ccore/libfatbeagle.la
 AM_CPPFLAGS = -I@top_srcdir@
-noinst_PROGRAMS = testfatbeagle
+bin_PROGRAMS = testfatbeagle
 testfatbeagle_SOURCES = testfatbeagle.c
 testfatbeagle_CPPFLAGS = $(AM_CPPFLAGS)
 

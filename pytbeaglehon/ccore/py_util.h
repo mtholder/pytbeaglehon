@@ -20,7 +20,7 @@ extern "C"
 		 * Utility functions for Python binding
 		 */
 
-PyObject* none();
+PyObject* none(void);
 
 /**
  * (internal) converts an python index on [-dim,dim) to the positive version

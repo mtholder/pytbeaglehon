@@ -23,7 +23,7 @@
 		 * Utility functions for Python binding
 		 */
 
-PyObject* none() {
+PyObject* none(void) {
 	Py_INCREF(Py_None);
 	return Py_None;
 }

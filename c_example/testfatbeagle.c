@@ -41,7 +41,6 @@ void internal_asrv_set_shape(ASRVObj *asrh, double val);
 
 void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     char n[81];
-    char implName[81];
     char description[81];
     long optsFlags, reqFlags, instanceHandle1, instanceHandle2;
     int rc;
@@ -121,12 +120,12 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     }
     else {
         *numErrors += 1;
-        fprintf(stderr, "duplicate instance handles returned by createLikelihoodCalcInstance.\n", i);
+        fprintf(stderr, "duplicate instance handles returned by createLikelihoodCalcInstance.\n");
     }
     if (instanceHandle1 >= 0) {
         if (freeLikeCalculatorInstance(instanceHandle1) < 0) {
             *numErrors += 1;
-            fprintf(stderr, "freeLikeCalculatorInstance failed.\n", i);
+            fprintf(stderr, "freeLikeCalculatorInstance failed.\n");
         }   
         else
             *numPasses += 1;
@@ -134,7 +133,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     if (instanceHandle2 >= 0) {
         if (freeLikeCalculatorInstance(instanceHandle2) < 0) {
             *numErrors += 1;
-            fprintf(stderr, "freeLikeCalculatorInstance failed.\n", i);
+            fprintf(stderr, "freeLikeCalculatorInstance failed.\n");
         }   
         else
             *numPasses += 1;
@@ -142,7 +141,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     if (instanceHandle1 >= 0) {
         if (freeLikeCalculatorInstance(instanceHandle1) >= 0) {
             *numErrors += 1;
-            fprintf(stderr, "double call to freeLikeCalculatorInstance did not fail.\n", i);
+            fprintf(stderr, "double call to freeLikeCalculatorInstance did not fail.\n");
         }
         else
             *numPasses += 1;
@@ -153,7 +152,6 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
 void testASRV(unsigned * numPasses, unsigned * numErrors) {
     if (gVerbose)
         fprintf(stderr, "Testing ASRV\n");
-    unsigned i;
     unsigned ncat = 4;
     ASRVObj * asrv = asrv_obj_new(ncat, 1, 0.4);
     
