@@ -23,7 +23,7 @@
 static PyObject * CLAUnderflowError;
 
 static PyObject* cpytbeaglehon_free(PyObject *self, PyObject *args) {
-	int handle;
+	long handle;
 	if (!PyArg_ParseTuple(args, "l", &handle)) {
 		return 0L;
 	}
