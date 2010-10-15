@@ -1,5 +1,6 @@
 #include "pytbeaglehon/ccore/asrv.h"
 #include "pytbeaglehon/ccore/calc_instance.h"
+#include "pytbeaglehon/ccore/discrete_state_model.h"
 #include <stdlib.h>
 #include <stdio.h>
 const double TOL = 1e-5;
@@ -44,7 +45,8 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     char description[81];
     long optsFlags, reqFlags, prefFlags, instanceHandle1, instanceHandle2;
     int rc;
-    unsigned i;
+    unsigned i, numModels;
+    const DSCTModelObj ** modArray = 0L;
     if (gVerbose)
         fprintf(stderr, "Testing CalcInstances\n");
     i = getNumComputationalResources();
@@ -85,7 +87,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
             0L, /* ASRVObj array */
             10, /* transition probability matrices */ 
             2, /* num of eigen solutions stored */ 
-            0, /* num rescalers */
+            1, /* num rescalers */
             0, /* the index of the computational resource to use */
             prefFlags,
             reqFlags); /* the beagle flags (see above) required of the computational resource */
@@ -106,7 +108,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
             0L, /* ASRVObj array */
             10, /* transition probability matrices */ 
             2, /* num of eigen solutions stored */ 
-            0, /* num rescalers */
+            1, /* num rescalers */
             -1, /* -1 should mean "use any resoure" */
             prefFlags,
             reqFlags); /* the beagle flags (see above) required of the computational resource */
@@ -124,6 +126,18 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
         *numErrors += 1;
         fprintf(stderr, "duplicate instance handles returned by createLikelihoodCalcInstance.\n");
     }
+
+    modArray = getModelList(instanceHandle1, &numModels);
+    if (modArray == 0L || numModels != 1) {
+            *numErrors += 1;
+            fprintf(stderr, "could not obtain model list.\n");
+    }
+    else {
+        *numPasses += 1;
+    }
+
+    
+    
     if (instanceHandle1 >= 0) {
         if (freeLikeCalculatorInstance(instanceHandle1) < 0) {
             *numErrors += 1;
@@ -148,7 +162,7 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
         else
             *numPasses += 1;
     }
-
+    
 }
 
 void testASRV(unsigned * numPasses, unsigned * numErrors) {

@@ -81,5 +81,6 @@ def get_logger(name="PYT_BEAGLE_HON"):
         logger.addHandler(ch)
     return logger
     
+from pytbeaglehon.disc_state_cont_time_model import DiscStateContTimeModel
 from pytbeaglehon.like_calc_environ import LikeCalcEnvironment
 

@@ -48,6 +48,7 @@ typedef struct {
 
 DSCTModelObj * dsctModelNew(unsigned dim);
 
+const DSCTModelObj ** getModelList(long instanceHandle, unsigned int *numModels);
 
 #ifdef __cplusplus
 }

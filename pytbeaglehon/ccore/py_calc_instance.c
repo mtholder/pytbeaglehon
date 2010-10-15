@@ -5,7 +5,7 @@
 #include "py_util.h"
 #include "calc_instance.h"
 #include "py_calc_instance.h"
-
+#include "discrete_state_model.h"
 
 
 PyObject* cPytBeagleHonFree(PyObject *self, PyObject *args) {
@@ -214,5 +214,24 @@ PyObject* pyGetResourceInfo(PyObject *self, PyObject *args) {
     PyTuple_SetItem(toReturn, 2, PyInt_FromLong(optsFlags));
     PyTuple_SetItem(toReturn, 3, PyInt_FromLong(reqFlags));
 	return toReturn;
+}
+
+PyObject* pyGetModelList(PyObject *self, PyObject *args) {
+	long handle;
+	unsigned numModels, i;
+	PyObject * toReturn;
+    const DSCTModelObj ** modArray;
+    if (!PyArg_ParseTuple(args, "l", &handle))
+		return 0L;
+    modArray = getModelList(handle, &numModels);
+    if (modArray == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+	toReturn = PyTuple_New(numModels);
+	for (i = 0; i < numModels; ++i) {
+	    PyTuple_SetItem(toReturn, i, (PyObject *)(modArray[i]));
+	}
+    return toReturn;
 }
 

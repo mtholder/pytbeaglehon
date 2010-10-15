@@ -49,16 +49,36 @@ typedef struct LikeCalculatorInstance {
     
 } LikeCalculatorInstance;
 
+static struct LikeCalculatorInstance ** gAllInstances = 0;
+static unsigned gLenAllInstancesArray = 0;
+
+INLINE struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
+	if (handle < gLenAllInstancesArray);
+        return gAllInstances[handle];
+    return 0L;
+}
+
+
+/** `numInstRateModels` is filled on output. */
+const DSCTModelObj ** getModelList(long instanceHandle, unsigned int * numModels) {
+    struct LikeCalculatorInstance * lci =  getLikeCalculatorInstance(instanceHandle);
+    if (lci == 0L) {
+        if (numModels)
+            *numModels = 0;
+        return 0L;
+    }
+    if (numModels)
+        *numModels = lci->numInstRateModels;
+    return (const DSCTModelObj **) lci->probModelArray;
+}
 
 
 long createNewLikeCalculatorInstance(void);
 void freeLikeCalcInstanceFields(struct LikeCalculatorInstance *);
-long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance *);
+long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance *, const ASRVObj ** asrvAliasForEachModel);
 
 
 
-static struct LikeCalculatorInstance ** gAllInstances = 0;
-static unsigned gLenAllInstancesArray = 0;
 
 
 
@@ -125,7 +145,7 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 }
 
 /* returns 0 if memory allocation fails */
-long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
+long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASRVObj ** asrvAliasForEachModel) {
 	unsigned int i;
 	int * resourceListPtr = 0L;
 	int resourceListLen = 0;
@@ -153,7 +173,8 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probModelArray in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
-	for (i = 0; i < t->numInstRateModels; ++i) {
+    t->numRateCategories = 0;
+    for (i = 0; i < t->numInstRateModels; ++i) {
 		t->probModelArray[i] = dsctModelNew(t->numStates);
 		if (t->probModelArray[i] == 0L) {
 			PYTBEAGLEHON_DEBUG_PRINTF1("Could not alloc probModelArray[%d] in allocateLikeCalcInstanceFields\n", i);
@@ -161,6 +182,17 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
 		}
 		Py_INCREF(t->probModelArray[i]);
 		t->probModelArray[i]->likeCalcInstanceAlias = t;
+        if (asrvAliasForEachModel != 0) {
+            t->asrvAliasForEachModel[i] = asrvAliasForEachModel[i];
+            if (t->asrvAliasForEachModel[i])
+                t->numRateCategories += t->asrvAliasForEachModel[i]->n;
+            else
+                t->numRateCategories += 1; /* no rate het */
+        }
+        else {
+            t->asrvAliasForEachModel[i] = 0L;
+            t->numRateCategories += 1; /* no rate het */
+        }
 	}
 
 	/* for each eigensolution, we need a EigenSolutionStruct
@@ -179,7 +211,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
 			goto errorExit;
 		}
 	}
-
+    
 
     BeagleResourceList * brl = beagleGetResourceList();
     if (brl == 0) {
@@ -194,7 +226,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
         resourceListPtr = &(t->resourceIndex);
         resourceListLen = 1;
     }
-        
+    
     BeagleInstanceDetails beagleInstanceDetails;
     t->beagleInstanceIndex = beagleCreateInstance(t->numLeaves,
                                                   t->numPartialStructs,
@@ -218,12 +250,6 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t) {
 		return 0L;
 }
 
-
-INLINE struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
-	assert(handle < gLenAllInstancesArray);
-
-	return gAllInstances[handle];
-}
 
 
 int freeLikeCalculatorInstance(long handle) {
@@ -257,7 +283,6 @@ long createLikelihoodCalcInstance(
         int resourceIndex, /* the index of the computational resource to use */
         long resourcePref,
         long resourceReq) {
-    unsigned i;
 	struct LikeCalculatorInstance * calcInstancePtr;
 	long handle = createNewLikeCalculatorInstance();
 	if (handle >= 0) {
@@ -279,18 +304,12 @@ long createLikelihoodCalcInstance(
 		calcInstancePtr->probModelArray = 0L;
 
 		calcInstancePtr->eigenSolutionStructs = 0L;
-		if (allocateLikeCalcInstanceFields(calcInstancePtr) == 0L) {
+		if (allocateLikeCalcInstanceFields(calcInstancePtr, asrvAliasForEachModel) == 0L) {
 			PYTBEAGLEHON_DEBUG_PRINTF("Deleting calcInstancePtr that was just created because of allocateLikeCalcInstanceFields failure\n");
 			freeLikeCalculatorInstance(handle);
 			return BEAGLE_ERROR_OUT_OF_MEMORY;
 		}
 		
-		for (i = 0; i < numInstRateModels; ++i) {
-		    if (asrvAliasForEachModel != 0)
-    		    calcInstancePtr->asrvAliasForEachModel[i] = asrvAliasForEachModel[i];
-            else
-    		    calcInstancePtr->asrvAliasForEachModel[i] = 0L;
-		}
 		setPatternWeights(handle, patternWeights);
 	}
 	return handle;

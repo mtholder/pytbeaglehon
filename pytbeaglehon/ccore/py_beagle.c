@@ -107,8 +107,10 @@ static PyMethodDef dsct_model_module_functions[] = {
 		"Returns the number of beagle implementations (computational resources) that are installed"},
 	{"cget_comp_resource_info", pyGetResourceInfo, METH_VARARGS,
 		"Takes the index of the computational resource, and returns a tuple of the (name, description, supported_flags, required_flags) for the resource."},
-		
 
+    /* calculation instance "member functions" */
+	{"cget_model_list", pyGetModelList, METH_VARARGS,
+		"Takes the instance handle and returns a tuple with reference to each of the DSCTModelObj objects allocated by the instance"},
 
 
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,

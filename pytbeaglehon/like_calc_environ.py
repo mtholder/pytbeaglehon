@@ -1,6 +1,8 @@
 #! /usr/bin/env python
-from pytbeaglehon.ccore.disc_state_cont_time_model import cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, cget_comp_resource_info
+from pytbeaglehon.ccore.disc_state_cont_time_model import cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, cget_comp_resource_info, cget_model_list
+from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger
+
 _LOG = get_logger(__name__)
 
 class BeagleResourceFlags:
@@ -31,6 +33,21 @@ class BeagleResourceFlags:
     PROCESSOR_GPU       = 1 << 16 #  Use GPU as main processor 
     PROCESSOR_FPGA      = 1 << 17 #  Use FPGA as main processor 
     PROCESSOR_CELL      = 1 << 18 #  Use Cell as main processor 
+
+# add to_flag_name and to_flag_number dictionaries to BeagleResourceFlags
+_name_to_num = {}
+_num_to_name = {}
+for _k, _v in BeagleResourceFlags.__dict__.items():
+    if isinstance(_k, str) and (isinstance(_v, int) or isinstance(_v, long)):
+        _name_to_num[_k] = _v
+        _num_to_name[_v] = _k
+BeagleResourceFlags.to_flag_name = _num_to_name
+BeagleResourceFlags.to_flag_number = _name_to_num
+del _num_to_name
+del _name_to_num
+
+
+
 
 class LikeCalcEnvironment(object):
     def get_num_comp_resources():
@@ -86,36 +103,52 @@ class LikeCalcEnvironment(object):
         self.resource_index = kwargs.get("resource_index")
         self.resource_preferences_flag = kwargs.get("resource_preferences_flag")
         self.resource_requirements_flag = kwargs.get("resource_requirements_flag")
-
+        self._char_edge_model = ()
     def _do_beagle_init(self):
-            if self._initialized:
+        if self._initialized:
                 raise ValueError("Calculation instance has already been initialized. Duplicate intialization is not allowed")
-            _LOG.debug("Calling cpytbeaglehon_init")
-            if self.resource_index is None:
-                self.resource_index = 0
-            if self.resource_preferences_flag is None:
-                self.resource_preferences_flag = 0
-            if self.resource_requirements_flag is None:
-                self.resource_requirements_flag = 0
-            self._handle = cpytbeaglehon_init( self.num_leaves, 
-                                self.num_patterns,
-                                self.pattern_weight_list,
-                                self.num_states,
-                                self.num_state_code_arrays,
-                                self.num_partials,
-                                self.num_inst_rate_matrices,
-                                self.asrv_list,
-                                self.num_prob_matrices,
-                                self.num_eigen_storage_structs,
-                                self.num_rescalings_multipliers,
-                                self.resource_index,
-                                self.resource_preferences_flag,
-                                self.resource_requirements_flag)
-            self._initialized = True
+        _LOG.debug("Calling cpytbeaglehon_init")
+        if self.resource_index is None:
+            self.resource_index = 0
+        if self.resource_preferences_flag is None:
+            self.resource_preferences_flag = 0
+        if self.resource_requirements_flag is None:
+            self.resource_requirements_flag = 0
+        self._handle = cpytbeaglehon_init( self.num_leaves, 
+                            self.num_patterns,
+                            self.pattern_weight_list,
+                            self.num_states,
+                            self.num_state_code_arrays,
+                            self.num_partials,
+                            self.num_inst_rate_matrices,
+                            self.asrv_list,
+                            self.num_prob_matrices,
+                            self.num_eigen_storage_structs,
+                            self.num_rescalings_multipliers,
+                            self.resource_index,
+                            self.resource_preferences_flag,
+                            self.resource_requirements_flag)
+        raw_models = cget_model_list(self._handle)
+        self._char_edge_model = ()
+        w = []
+        for n, i in enumerate(raw_models):
+            try:
+                a = self.asrv_list[n]
+            except:
+                a = None
+            wrapped = DiscStateContTimeModel(cmodel=i, num_states=self.num_states, model_index=n, calc_env=self, asrv=a)
+            w.append(wrapped)
+        self._char_edge_model = tuple(w)
+        
+        self._initialized = True
 
     def __del__(self):
+        self.release_resources()
+
+    def release_resources(self):
         if self._initialized:
             _LOG.debug("Calling cpytbeaglehon_free")
             cpytbeaglehon_free(self._handle)
+            self._char_edge_model = ()
             self._handle = None
             self._initialized = False
