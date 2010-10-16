@@ -68,9 +68,9 @@ class RateHetManager(object):
 
     def state_hash(self):
         if self._state_hash_dirty:
-            self._state_hash = tuple([float(i) for i in self.rates] + [float(i) for i in self.probabilities])
+            self._state_hash = hash(tuple([float(i) for i in self.rates] + [float(i) for i in self.probabilities]))
             self._state_hash_dirty = False
-        return self._state_hash_dirty
+        return self._state_hash
         
 
     def get_num_cat(self):
