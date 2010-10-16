@@ -31,6 +31,8 @@ class RateHetManager(object):
         """
         if rate_het_type > RateHetType.MAX_RATE_HET_TYPE:
             raise ValueError("Illegal value for rate_het_type")
+        self._state_hash = None
+        self._state_hash_dirty = True
         self._rate_het_type = rate_het_type
         num_categories = kwargs.get("num_categories", 0)
         rates = kwargs.get("rates")
@@ -64,6 +66,12 @@ class RateHetManager(object):
         if probabilities:
             self.probabilities = probabilities
 
+    def state_hash(self):
+        if self._state_hash_dirty:
+            self._state_hash = tuple([float(i) for i in self.rates] + [float(i) for i in self.probabilities])
+            self._state_hash_dirty = False
+        return self._state_hash_dirty
+        
 
     def get_num_cat(self):
         "Returns the number of rate categories."
@@ -88,6 +96,7 @@ class RateHetManager(object):
         rf = [float(i) for i in r]
         if min(rf) < 0.0:
             raise ValueError("All rates must be non-negative")
+        self._state_hash_dirty = True
         self._rate_list = rf
 
     def get_probabilities(self):
@@ -104,6 +113,7 @@ class RateHetManager(object):
         sp = sum(p)
         if sp < (1.0 - _TOLERANCE) or sp > (1.0 + _TOLERANCE):
             raise ValueError("Sum of probabilities must be 1.0")
+        self._state_hash_dirty = True
         self._probabilities = p
 
 
@@ -117,10 +127,13 @@ class RateHetManager(object):
         "Sets the shape parameter for a Gamma distribution over rates."
         if self._rate_het_type > RateHetType.LAST_GAMMA:
             raise TypeError("RateHetManager.set_shape can only be used with gamma distributions")
-        self._rate_list = None # this will trigger recalculation of the rates
-        self._shape = shape
-        if self._shape > _MIN_GAMMA_SHAPE:
+        if shape > _MIN_GAMMA_SHAPE:
+            self._rate_list = None # this will trigger recalculation of the rates
+            self._shape = shape
+            self._state_hash_dirty = True
             casrvo_set_shape(self._asrv, shape)
+        else:
+            raise ValueError("Shape must be > %f" % _MIN_GAMMA_SHAPE)
 
     num_categories = property(get_num_cat)
     rates = property(get_rates, set_rates)

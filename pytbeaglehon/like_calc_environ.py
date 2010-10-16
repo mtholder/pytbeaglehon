@@ -366,8 +366,7 @@ class LikeCalcEnvironment(object):
             except:
                 a = None
             if models_wrappers_supplied:
-                self._model_list[n].set_asrv(a, propagate=False)
-                self._model_list[n].cmodel = i
+                self._model_list[n]._reassign_environ(self, n, cmodel=cmodel, asrv=a)
             else:
                 wrapped = DiscStateContTimeModel(cmodel=i, num_states=self._num_states, model_index=n, calc_env=self, asrv=a)
                 model_list.append(wrapped)
