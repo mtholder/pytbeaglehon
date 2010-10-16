@@ -10,6 +10,11 @@ class DiscStateContTimeModel(object):
     def __init__(self, **kwargs):
         self._cmodel = kwargs.get('cmodel')
         self._num_states = kwargs.get('num_states')
+        self._char_type = kwargs.get('char_type')
+        if (self._char_type is not None):
+            if (self._num_states is not None) and (self._num_states != self._char_type.num_states):
+                raise ValueError("If 'num_states' and 'char_type' are both specified, then the number of states must agree")
+            self._num_states = self._char_type.num_states
         self._model_index = kwargs.get('model_index')
         self._calc_env = kwargs.get('calc_env')
         self._asrv = kwargs.get('asrv')
@@ -21,7 +26,7 @@ class DiscStateContTimeModel(object):
         self._asrv_hash = None
         self._total_state_hash = None
         self._last_asrv_rates_hash = None        
-
+    
     def q_mat_is_dirty():
         return (self._changed_params != _EMPTY_SET)
 
@@ -102,8 +107,16 @@ class DiscStateContTimeModel(object):
         self._cmodel = cmodel
         self._asrv = asrv
 
+class RevDiscStateContTimeModel(DiscStateContTimeModel):
+    pass
 
-        
+class JukesCantorModel(RevDiscStateContTimeModel):
+    def __init__(self):
+        dna = DNAType()
+        _LOG.debug("Created dna type in JukesCantorModel")
+        RevDiscreteModel.__init__(self, r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]], char_type=dna, params=[])
+        _LOG.debug("called RevDiscreteModel.__init__")
+
 ##############################################################################
 ##  pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
 ##
