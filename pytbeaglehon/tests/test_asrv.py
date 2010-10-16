@@ -72,6 +72,12 @@ class ASRVTest(unittest.TestCase):
         rhm.set_shape(4.2)
         expected = [0.49655820, 0.79929783, 1.10263121, 1.60151276]
         assert_list_eq(self, rhm.rates, expected)
+    def test_hashing(self):
+        rhm = RateHetManager(shape=0.5, num_categories=4, rate_het_type=rhtype)
+        h1 = rhm.state_hash()
+        rhm.shape = 0.6
+        h2 = rhm.state_hash()
+        self.assertEqual(h1, h2)
 
 # pylint: disable-msg=C0103
 def getTestSuite():
