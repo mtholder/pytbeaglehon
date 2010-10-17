@@ -1,7 +1,8 @@
+#include <libhmsbeagle/beagle.h>
 #include "py_discrete_state_model.h"
 #include "discrete_state_model.h"
 #include "py_util.h"
-
+#include "internal_like_calc_env.h"
 
 /* Q matrix setter */
 PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
@@ -33,5 +34,31 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 	dsct_model_obj->eigenCalcIsDirty = 1;
 	if (recalc_eigen_mat(dsct_model_obj) == 0)
 	    return 0L;
+	return none();
+}
+
+
+PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
+    long handle;
+    int eigenIndex;
+    unsigned numToCalc;
+	PyObject * edge_len_list_obj, * pr_mat_ind_list_obj;
+    struct LikeCalculatorInstance * lci;
+	if (!PyArg_ParseTuple(args, "liO!O!", &handle, &eigenIndex, &PyList_Type, &edge_len_list_obj, &PyList_Type, &pr_mat_ind_list_obj))
+		return 0L;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L) {
+		PyErr_SetString(PyExc_IndexError, "LikeCalculatorInstance handle out of range");
+		return 0L;
+    }
+	if (listToDoubleArrayMaxSize(edge_len_list_obj, lci->edgeLenScratch, lci->numProbMats, &numToCalc) == 0)
+	    return 0L;
+	if (listToUnsignedArray(pr_mat_ind_list_obj, lci->probMatIndexScratch, numToCalc) == 0) {
+		PyErr_SetString(PyExc_IndexError, "edge length list and prob mat index list must be the same length");
+	}
+	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
+	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");
+	    return 0L;
+	}
 	return none();
 }

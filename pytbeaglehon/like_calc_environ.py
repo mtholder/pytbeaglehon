@@ -1,14 +1,16 @@
 #! /usr/bin/env python
-import itertools
+from itertools import izip
 from pytbeaglehon.ccore.disc_state_cont_time_model import \
     cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, \
     cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
-    cdsctm_calc_eigens
+    cdsctm_calc_eigens, cdsctm_calc_pr_mats
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
 
 _LOG = get_logger(__name__)
 _EMPTY_SET = set()
+_EMPTY_DICT = {}
+
 class BeagleResourceFlags:
     PRECISION_SINGLE    = 1 << 0 #  Single precision computation 
     PRECISION_DOUBLE    = 1 << 1 #  Double precision computation 
@@ -137,7 +139,7 @@ class LikeCalcEnvironment(object):
             if self._asrv_list is not None:
                 if len(self._asrv_list) != len(self._model_list):
                     raise ValueError("If asrv_list and model_list are both specified then they must be the same length")
-                for a, m in itertools.izip(self._asrv_list, v):
+                for a, m in izip(self._asrv_list, v):
                     m.asrv = a
             self._num_model_matrices = len(v)
             self._model_list = tuple(v)
@@ -293,7 +295,7 @@ class LikeCalcEnvironment(object):
         if self._model_list:
             if len(v) != len(self._model_list):
                 raise ValueError("len(asrv_list) must equal len(model_list)") # could be relaxed by using multiple beagle instances
-            for a, m in itertools.izip(v, self._model_list):
+            for a, m in izip(v, self._model_list):
                 m.asrv = a
         self._asrv_list = v
     asrv_list = property(get_asrv_list, set_asrv_list)
@@ -390,6 +392,12 @@ class LikeCalcEnvironment(object):
         self._saved_eigen_storage_structs = {} # eigen solution index to state_id
         self._calculated_eigen_storage_structs = {} # eigen solution index to state_id
         self._cached_eigen = {} # state_id to eigen solution index
+
+        self._free_prob_matrices = set(xrange(self.num_prob_matrices))
+        self._saved_prob_matrices = {} # prob mat index to state_id
+        self._calculated_prob_matrices = {} # prob mat index to state_id
+        self._cached_prob_matrices = {} # state_id to prob mat index
+
     def __del__(self):
         self.release_resources()
 
@@ -400,6 +408,16 @@ class LikeCalcEnvironment(object):
             self._model_list = ()
             self._handle = None
             self._incarnated = False
+            
+            del self._free_eigen_storage_structs
+            del self._saved_eigen_storage_structs
+            del self._calculated_eigen_storage_structs
+            del self._cached_eigen
+    
+            del self._free_prob_matrices
+            del self._saved_prob_matrices
+            del self._calculated_prob_matrices
+            del self._cached_prob_matrices
 
     def calc_eigen_soln(self, model, state_id, eigen_soln_caching=(CachingFacets.DO_NOT_SAVE,)):
         if not self._incarnated:
@@ -409,7 +427,7 @@ class LikeCalcEnvironment(object):
             raise NotImplementedError("REPLACE of eigen structures not supported")
         else:
             if self._free_eigen_storage_structs == _EMPTY_SET:
-                if self._calculated_eigen_storage_structs == _EMPTY_SET:
+                if self._calculated_eigen_storage_structs == _EMPTY_DICT:
                     raise ValueError("No eigen solution structures available!")
                 es_index = iter(self._calculated_eigen_storage_structs).next()
                 cached_state_id = self._calculated_eigen_storage_structs[es_index]
@@ -432,4 +450,51 @@ class LikeCalcEnvironment(object):
         else:
             self._saved_eigen_storage_structs[es_index] = state_id
         return es_index
-            
+
+
+    def _calc_prob_from_eigen(self, edge_len, asrv, eigen_soln_index, eigen_state_id, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
+        if not self._incarnated:
+            self._do_beagle_init()
+        assert(eigen_soln_index < self.num_eigen_storage_structs)
+        assert(eigen_soln_index == self._cached_eigen[eigen_state_id])
+        cf = prob_mat_caching[0]
+        if asrv is None:
+            nc = 1
+            rates = (1,)
+        else:
+            nc = asrv.num_categories
+            rates = asrv.rates
+        if cf == CachingFacets.SAVE_REPLACE:
+            raise NotImplementedError("REPLACE of probability matrices not supported")
+        else:
+            prmat_index_list = []
+            for rate_categ in range(nc):
+                if self._free_prob_matrices == _EMPTY_SET:
+                    if self._calculated_prob == _EMPTY_DICT:
+                        raise ValueError("No prob matrices available!")
+                    prmat_index = iter(self._calculated_prob_matrices).next()
+                    cached_state_id = self._calculated_prob_matrices[prmat_index]
+                    if cached_state_id in self._cached_prob_matrices[cached_state_id]:
+                        del self._cached_prob_matrices[cached_state_id]
+                    del self._calculated_prob_matrices[prmat_index]
+                else:
+                    prmat_index = iter(self._free_prob_matrices).next()
+                    self._free_prob_matrices.remove(prmat_index)
+                prmat_index_list.append(prmat_index)
+        effective_edge_lengths = [edge_len*rm for rm in rates]
+        try:
+            cdsctm_calc_pr_mats(self._handle, eigen_soln_index, effective_edge_lengths, prmat_index_list)
+        except:
+            self._free_prob_matrices.add(*prmat_index_list)
+            raise
+        for eb, pmi in izip(effective_edge_lengths, prmat_index_list):
+            combo_state_id = combine_state_id(eigen_state_id, eb)
+            self._cached_prob_matrices[combo_state_id] = pmi
+            if cf == CachingFacets.DO_NOT_SAVE:
+                self._calculated_prob_matrices[pmi] = combo_state_id
+            else:
+                self._saved_eigen_storage_structs[pmi] = combo_state_id
+        return pmi
+
+def combine_state_id(*valist):
+    return ' '.join([str(i) for i in valist])

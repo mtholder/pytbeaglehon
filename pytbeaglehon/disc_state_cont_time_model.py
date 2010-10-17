@@ -108,9 +108,10 @@ class DiscStateContTimeModel(object):
                                              state_id=state_id,
                                              eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
         self._eigen_soln_index = esi
-        pmi = self._calc_prob_from_eigen(edge_len, 
+        pmi = self._calc_env._calc_prob_from_eigen(edge_len, 
                                          self.asrv,
-                                         state_id=state_id,
+                                         eigen_soln_index=esi,
+                                         eigen_state_id=state_id,
                                          prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))
         self._prob_mat_indices = pmi
         return self._calc_env._get_prob_matrices(self._prob_mat_indices, state_id=state_id)

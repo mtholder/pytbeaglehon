@@ -43,9 +43,13 @@ struct LikeCalculatorInstance {
 	unsigned int numEigenStorage;
 	EigenSolutionStruct ** eigenSolutionStructs;
     
+    double * edgeLenScratch; /* length numProbMats*/
+    int * probMatIndexScratch; /* length numProbMats */
+    
 };
 
 
+struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
 
 #ifdef __cplusplus
 }

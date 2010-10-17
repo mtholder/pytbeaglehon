@@ -39,8 +39,10 @@ int pyIndToCInd(int py_ind, unsigned dim);
 PyObject * doubleArrayToList(const double *arr, unsigned len);
 PyObject * doubleMatToList(const double **arr, unsigned n_rows, unsigned n_cols);
 PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_rows, unsigned n_cols);
-PyObject * listToDoubleArray(PyObject *list_obj, double *arr, unsigned n, int demandExactLen);
-PyObject * listToDoubleMatrix(PyObject *list_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen);
+PyObject * listToUnsignedArray(PyObject *list_obj, int *arr, unsigned n);
+PyObject * listToDoubleArrayMaxSize(PyObject *list_obj, double *arr, unsigned maxLen, unsigned *actualLen);
+PyObject * listToDoubleArray(PyObject *list_obj, double *arr, unsigned n);
+PyObject * listToDoubleMatrix(PyObject *list_obj, double **arr, unsigned n_rows, unsigned n_cols);
 PyObject * tupleToDoubleArray(PyObject *tuple_obj, double *arr, unsigned n, int demandExactLen);
 PyObject * tupleToDoubleMatrix(PyObject *tuple_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen);
 

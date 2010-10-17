@@ -18,7 +18,7 @@
 static struct LikeCalculatorInstance ** gAllInstances = 0;
 static unsigned gLenAllInstancesArray = 0;
 
-INLINE struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
+struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
 	if (handle < gLenAllInstancesArray);
         return gAllInstances[handle];
     return 0L;
@@ -108,6 +108,9 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	inst->eigenSolutionStructs = 0L;
 	inst->asrvAliasForEachModel = 0L;
 	inst->beagleInstanceCreated = 0;
+    inst->edgeLenScratch = 0L; 
+    inst->probMatIndexScratch = 0L; 
+
 }
 
 /* returns 0 if memory allocation fails */
@@ -179,6 +182,16 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 		t->eigenSolutionStructs[i]->beagleEigenBufferIndex = i;
 	}
     
+    t->edgeLenScratch = (double *)malloc(t->numProbMats*sizeof(double));
+	if (t->edgeLenScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc edgeLenScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+    t->probMatIndexScratch = (int *)malloc(t->numProbMats*sizeof(int ));
+	if (t->probMatIndexScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probMatIndexScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
 
     BeagleResourceList * brl = beagleGetResourceList();
     if (brl == 0) {
@@ -335,6 +348,11 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	free(inst->eigenSolutionStructs);
 	inst->eigenSolutionStructs = 0L;
 	inst->numEigenStorage = 0;
+	
+	free(inst->probMatIndexScratch);
+	inst->probMatIndexScratch = 0L;
+	free(inst->edgeLenScratch);
+	inst->edgeLenScratch = 0L;
 }
 
 
@@ -378,6 +396,36 @@ int getComputationalResourceDetails(int resourceIndex,
         *requiredFlags = br->requiredFlags;
     return 0;
     
+}
+
+
+int calcPrMats(long handle, 
+               int eigenIndex,
+               unsigned numToCalc,
+               const double * edgeLenArray,
+               const int * probMatIndexArray) {
+    struct LikeCalculatorInstance * lci;
+    EigenSolutionStruct * ess;
+    int bEigen;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || numToCalc > lci->numProbMats) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    if (eigenIndex < 0 || eigenIndex >= lci->numEigenStorage) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    ess = lci->eigenSolutionStructs[eigenIndex];
+    if (ess == 0L || ess->beagleEigenBufferIndex < 0) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    bEigen = ess->beagleEigenBufferIndex;
+    return beagleUpdateTransitionMatrices(lci->beagleInstanceIndex,
+                                   bEigen,
+                                   probMatIndexArray,
+                                   0L, /*firstDerivativeIndices*/
+                                   0L, /*secondDerivativeIndices*/
+                                   edgeLenArray,
+                                   numToCalc);
 }
 
 

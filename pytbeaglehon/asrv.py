@@ -85,7 +85,7 @@ class RateHetManager(object):
             else:
                 self._rate_list = [_LOW_RATE_MIN_GAMMA_SHAPE ] * self._num_cat
                 self._rate_list[self._num_cat - 1] = float(self._num_cat)
-        return list(self._rate_list)
+        return tuple(self._rate_list)
 
     def set_rates(self, r):
         "Returns a list with a rate for each category."

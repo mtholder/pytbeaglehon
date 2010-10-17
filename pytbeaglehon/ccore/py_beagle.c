@@ -118,7 +118,12 @@ static PyMethodDef dsct_model_module_functions[] = {
 		"Replaces the Q-matrix (takes a tuple of tuple of floats)."},
 	{"cdsctm_calc_eigens", cdsctm_calc_eigens, METH_VARARGS,
 		"Calculates the eigen solution for a model. Takes the model and the index of the eigen solution storage"},
+    /* calls on an eigen solution object  */
+	{"cdsctm_calc_pr_mats", cdsctm_calc_pr_mats, METH_VARARGS,
+		"Calculates a list of transition probability matrices from eigen solution and list of effective branch lengths. Takes instance_handle, eigen_soln_index, effective_edge_length_list, prmat_index_list"},
 
+    
+    
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,
 		"intializer -- takes shape parameter, ncat, dcst_model.RateHetType facet."},
 	{"casrvo_get_n_cat", casrvo_get_n_cat, METH_VARARGS,
