@@ -3,10 +3,9 @@ from itertools import izip
 from pytbeaglehon.ccore.disc_state_cont_time_model import \
     cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, \
     cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
-    cdsctm_calc_eigens, cdsctm_calc_pr_mats
+    cdsctm_calc_eigens, cdsctm_calc_pr_mats, cdsctm_get_pr_mats
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
-
 _LOG = get_logger(__name__)
 _EMPTY_SET = set()
 _EMPTY_DICT = {}
@@ -452,7 +451,7 @@ class LikeCalcEnvironment(object):
         return es_index
 
 
-    def _calc_prob_from_eigen(self, edge_len, asrv, eigen_soln_index, eigen_state_id, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
+    def calc_prob_from_eigen(self, edge_len, asrv, eigen_soln_index, eigen_state_id, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
         if not self._incarnated:
             self._do_beagle_init()
         assert(eigen_soln_index < self.num_eigen_storage_structs)
@@ -487,6 +486,7 @@ class LikeCalcEnvironment(object):
         except:
             self._free_prob_matrices.add(*prmat_index_list)
             raise
+        to_return = []
         for eb, pmi in izip(effective_edge_lengths, prmat_index_list):
             combo_state_id = combine_state_id(eigen_state_id, eb)
             self._cached_prob_matrices[combo_state_id] = pmi
@@ -494,7 +494,30 @@ class LikeCalcEnvironment(object):
                 self._calculated_prob_matrices[pmi] = combo_state_id
             else:
                 self._saved_eigen_storage_structs[pmi] = combo_state_id
-        return pmi
+            to_return.append((pmi, combo_state_id))
+        return to_return
 
+    def get_prob_matrices(self, index_list=None, index_and_state_list=None):
+        if index_list is None:
+            index_list = []
+            if index_and_state_list is None:
+                raise ValueError("Either index_list or index_and_state_list must be used")
+            for ind, state_id in index_and_state_list:
+                try:
+                    cached_id = self._calculated_prob_matrices[ind]
+                except:
+                    try:
+                        cached_id = self._saved_prob_matrices[ind]
+                    except:
+                        raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
+                if cached_id != state_id:
+                    raise RuntimeError("Prob matrix stored at %d does not match state identifier '%s'" % (ind, str(state_id)))
+                index_list.append(ind)
+        else:
+            for ind in index_list:
+                if (ind not in self._calculated_prob_matrices) and (ind not in self._saved_prob_matrices):
+                    raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
+        return cdsctm_get_pr_mats(self._handle, index_list)
+           
 def combine_state_id(*valist):
     return ' '.join([str(i) for i in valist])

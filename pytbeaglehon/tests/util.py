@@ -4,8 +4,16 @@
 # (see bottom of file)
 from itertools import izip
 import unittest
+from pytbeaglehon import get_logger
+_LOG = get_logger(__name__)
+
+def assert_list_of_mat_eq(self, returned, expected):
+    for ret_mat, exp_mat in izip(returned, expected):
+        assert_mat_eq(self, ret_mat, exp_mat)
+    
 def assert_mat_eq(self, returned, expected):
     "calls self.assertAlmostEqual for all elements of two matrices."
+    _LOG.debug("returned = %s\nexpected = %s" %(str(returned), str(expected)))
     for ret_row, exp_row in izip(returned, expected):
         assert_list_eq(self, ret_row, exp_row)
 

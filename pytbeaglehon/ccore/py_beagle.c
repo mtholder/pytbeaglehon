@@ -121,6 +121,8 @@ static PyMethodDef dsct_model_module_functions[] = {
     /* calls on an eigen solution object  */
 	{"cdsctm_calc_pr_mats", cdsctm_calc_pr_mats, METH_VARARGS,
 		"Calculates a list of transition probability matrices from eigen solution and list of effective branch lengths. Takes instance_handle, eigen_soln_index, effective_edge_length_list, prmat_index_list"},
+	{"cdsctm_get_pr_mats", cdsctm_get_pr_mats, METH_VARARGS,
+		"Returns the stored transition probability matrices. Takes instance_handle, prmat_index_list"},
 
     
     

@@ -15,7 +15,7 @@ extern PyTypeObject dsct_model_type;
 PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args);
 PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args);
 PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args);
-
+PyObject* cdsctm_get_pr_mats(PyObject *self, PyObject *args);
 
 #ifdef __cplusplus
 }

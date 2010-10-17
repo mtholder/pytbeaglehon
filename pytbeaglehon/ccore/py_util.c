@@ -117,6 +117,41 @@ PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_ro
 	return lp;
 }
 
+PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen) {
+	PyObject *item;
+	unsigned pylist_len = (unsigned) PyList_Size(list_obj);
+	unsigned i;
+	long lval;
+	if (pylist_len > n) {
+		PyErr_SetString(PyExc_IndexError, "list index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n; ++i) {
+		item = PyList_GetItem(list_obj, i);
+		if (item == 0L) {
+    		PyErr_SetString(PyExc_TypeError, "could not extract item from list");
+			return 0L;
+		}
+		Py_INCREF(item);
+		if (!PyInt_Check(item)) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "integer expected");
+			return 0L;
+		}
+		lval = PyInt_AsLong(item);
+		if (lval >= INT_MAX || lval < 0) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+	    	return 0L;
+		}
+		arr[i] = (int) lval;
+		Py_DECREF(item);
+	}
+	if (actualLen)
+	    *actualLen = pylist_len;
+	return none();
+}
+
 PyObject * listToUnsignedArray(PyObject *list_obj, int *arr, unsigned n) {
 	PyObject *item;
 	unsigned pylist_len = (unsigned) PyList_Size(list_obj);

@@ -110,6 +110,7 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	inst->beagleInstanceCreated = 0;
     inst->edgeLenScratch = 0L; 
     inst->probMatIndexScratch = 0L; 
+    inst->probMatScratch = 0L;
 
 }
 
@@ -192,6 +193,11 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probMatIndexScratch in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
+    t->probMatScratch = allocateDblMatrix(t->numStates, t->numStates);
+	if (t->probMatScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probMatScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
 
     BeagleResourceList * brl = beagleGetResourceList();
     if (brl == 0) {
@@ -215,7 +221,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->numPatterns,
                                                   t->numEigenStorage,
                                                   t->numProbMats,
-                                                  t->numRateCategories,
+                                                  1, /* we take care of the asrv at a higher level t->numRateCategories, */
                                                   t->numRescalingsMultipliers,
                                                   resourceListPtr,
                                                   resourceListLen,
@@ -353,6 +359,8 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	inst->probMatIndexScratch = 0L;
 	free(inst->edgeLenScratch);
 	inst->edgeLenScratch = 0L;
+	freeDblMatrix(inst->probMatScratch);
+	inst->probMatScratch = 0L;
 }
 
 
@@ -429,6 +437,17 @@ int calcPrMats(long handle,
 }
 
 
+int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
+    struct LikeCalculatorInstance * lci;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || probMatIndex >= lci->numProbMats) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    return beagleGetTransitionMatrix(lci->beagleInstanceIndex,
+								     probMatIndex,
+								     flattenedMat);
+    
+}
 
 /**
   pytbeaglehon phylogenetic likelihood caluclations using beaglelib.

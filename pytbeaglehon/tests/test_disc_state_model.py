@@ -18,7 +18,7 @@ class ModelTest(unittest.TestCase):
         assert_mat_eq(self, jc.q_mat, [[-1.0, 1.0/3, 1.0/3, 1.0/3], [1.0/3, -1.0, 1.0/3, 1.0/3], [1.0/3, 1.0/3, -1.0, 1.0/3], [ 1.0/3, 1.0/3, 1.0/3, -1.0]])
     def test_jc_probs(self):
         jc = JukesCantorModel()
-        assert_mat_eq(jc.calc_prob_matrices(0.0), [[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0.0, 0.0, 1.0, 0.0], [ 0, 0, 0, 1.0]])
+        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.0), [[[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0.0, 0.0, 1.0, 0.0], [ 0, 0, 0, 1.0]]])
 class Skip:
     def test_rev_init(self):
         b = DNAType()

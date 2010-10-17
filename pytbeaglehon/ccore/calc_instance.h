@@ -87,6 +87,7 @@ int setPatternWeights(long likeCalcHandle, const double * patternWeights);
     the matrices in `probMatIndexArray`
 \returns 0 or BeagleReturnCode for failure */
 int calcPrMats(long handle, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
+int fetchPrMat(long handle, int probMatIndex, double * flattenedMat);
 
 
 

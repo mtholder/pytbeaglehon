@@ -38,6 +38,46 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 }
 
 
+PyObject* cdsctm_get_pr_mats(PyObject *self, PyObject *args) {
+    long handle;
+    unsigned i, numToCalc;
+	PyObject * pr_mat_ind_list_obj;
+    struct LikeCalculatorInstance * lci;
+    PyObject *lp;
+	PyObject *el_obj;
+
+	if (!PyArg_ParseTuple(args, "lO!", &handle, &PyList_Type, &pr_mat_ind_list_obj))
+		return 0L;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L) {
+		PyErr_SetString(PyExc_IndexError, "LikeCalculatorInstance handle out of range");
+		return 0L;
+    }
+	if (listToUnsignedArrayMaxSize(pr_mat_ind_list_obj, lci->probMatIndexScratch, lci->numProbMats, &numToCalc) == 0) {
+		PyErr_SetString(PyExc_IndexError, "Number of probability matrix exceeds the number that exist!");
+		return 0L;
+    }    
+    
+	lp = PyList_New(numToCalc);
+	if (lp == 0L)
+		return 0L;
+    
+    for (i = 0; i < numToCalc; ++i) {
+        if (fetchPrMat(handle, lci->probMatIndexScratch[i], lci->probMatScratch[0]) != BEAGLE_SUCCESS) {
+            PyErr_SetString(PyExc_RuntimeError, "fetchPrMat call failed");
+            goto errorExit;
+        }
+		el_obj = doubleMatToList((const double**)lci->probMatScratch, lci->numStates, lci->numStates);
+		if (el_obj == 0L) {
+			goto errorExit;
+		}
+		PyList_SetItem(lp, i, el_obj);
+    }    
+    return lp;
+    errorExit:
+        Py_DECREF(lp);
+        return 0L;
+}
 PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
     long handle;
     int eigenIndex;

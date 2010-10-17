@@ -89,7 +89,8 @@ class DiscStateContTimeModel(object):
     def state_hash(self):
         if  (self._total_state_hash is None) or  self.q_mat_is_dirty() or self.asrv_is_dirty():
             self._total_state_hash = hash((id(self), self.q_mat_hash, self._asrv_hash))
-            self._prev_asrv_hash = self._asrv_hash
+            if self._prev_asrv_hash != self._asrv_hash:
+                self._prev_asrv_hash = self._asrv_hash
         return self._total_state_hash
      
     def convert_eigen_soln_caching(self, in_eigen_soln_caching):
@@ -108,13 +109,13 @@ class DiscStateContTimeModel(object):
                                              state_id=state_id,
                                              eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
         self._eigen_soln_index = esi
-        pmi = self._calc_env._calc_prob_from_eigen(edge_len, 
+        pmi = self._calc_env.calc_prob_from_eigen(edge_len, 
                                          self.asrv,
                                          eigen_soln_index=esi,
                                          eigen_state_id=state_id,
                                          prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))
         self._prob_mat_indices = pmi
-        return self._calc_env._get_prob_matrices(self._prob_mat_indices, state_id=state_id)
+        return self._calc_env.get_prob_matrices(index_and_state_list=self._prob_mat_indices)
 
 
     def _incarnate(self):
