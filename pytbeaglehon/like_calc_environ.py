@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 import itertools
-from pytbeaglehon.ccore.disc_state_cont_time_model import cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat
+from pytbeaglehon.ccore.disc_state_cont_time_model import \
+    cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, \
+    cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
+    cdsctm_calc_eigens
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
 
@@ -278,7 +281,7 @@ class LikeCalcEnvironment(object):
         if nm is None:
             return tuple()
         if self._model_list:
-            return tuple([i.asrv] for i in self._model_list)
+            return tuple(i.asrv for i in self._model_list)
         return tuple()
 
     def set_asrv_list(self, v):
@@ -310,7 +313,7 @@ class LikeCalcEnvironment(object):
             i = int(v)
             if i < 0:
                 raise ValueError("num_model_matrices cannot be negative")
-            if (self._model_list is None) or (i != len(self._model_list)):
+            if (self._model_list is None) or (i == len(self._model_list)):
                 self._num_model_matrices = i
             else:
                 raise ValueError("num_model_matrices and the length of the model list must agree (if both are used)")
@@ -346,31 +349,32 @@ class LikeCalcEnvironment(object):
         resourceIndex = self._resource_index
         if resourceIndex is None:
             resourceIndex = -1
-        self._handle = cpytbeaglehon_init( self._num_leaves, 
-                            self.num_patterns,
-                            self.pattern_weight_list,
-                            self.num_states,
-                            self.num_state_code_arrays,
-                            self.num_partials,
-                            self.num_model_matrices,
-                            asrv,
-                            self.num_prob_matrices,
-                            self.num_eigen_storage_structs,
-                            self.num_rescalings_multipliers,
-                            resourceIndex,
-                            self._resource_preferences_flag,
-                            self._resource_requirements_flag)
+        arg_list = [self._num_leaves, 
+                    self.num_patterns,
+                    self.pattern_weight_list,
+                    self.num_states,
+                    self.num_state_code_arrays,
+                    self.num_partials,
+                    self.num_model_matrices,
+                    asrv,
+                    self.num_prob_matrices,
+                    self.num_eigen_storage_structs,
+                    self.num_rescalings_multipliers,
+                    resourceIndex,
+                    self._resource_preferences_flag,
+                    self._resource_requirements_flag]
+        _LOG.debug("Calling cpytbeaglehon_init with %s" %str(arg_list))
+        self._handle = cpytbeaglehon_init(*arg_list)
         raw_models = cget_model_list(self._handle)
-        self._model_list = ()
-        for n, i in enumerate(raw_models):
+        for n, cmodel in enumerate(raw_models):
             try:
                 a = asrv[n]
             except:
                 a = None
             if models_wrappers_supplied:
-                self._model_list[n]._reassign_environ(self, n, cmodel=cmodel, asrv=a)
+                model_list[n]._reassign_environ(self, n, cmodel=cmodel, asrv=a)
             else:
-                wrapped = DiscStateContTimeModel(cmodel=i, num_states=self._num_states, model_index=n, calc_env=self, asrv=a)
+                wrapped = DiscStateContTimeModel(cmodel=cmodel, num_states=self._num_states, model_index=n, calc_env=self, asrv=a)
                 model_list.append(wrapped)
                 
         if not models_wrappers_supplied:
@@ -401,7 +405,7 @@ class LikeCalcEnvironment(object):
         if not self._incarnated:
             self._do_beagle_init()
         cf = eigen_soln_caching[0]
-        if cf == CachingFacets.REPLACE:
+        if cf == CachingFacets.SAVE_REPLACE:
             raise NotImplementedError("REPLACE of eigen structures not supported")
         else:
             if self._free_eigen_storage_structs == _EMPTY_SET:

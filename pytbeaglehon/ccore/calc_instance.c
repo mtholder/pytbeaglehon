@@ -2,7 +2,7 @@
 #include "phylo_util.h"
 #include <stdlib.h>
 #include <string.h>
-#include "libhmsbeagle/beagle.h"
+#include <libhmsbeagle/beagle.h>
 #include "internal_like_calc_env.h"
 
 
@@ -176,6 +176,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 			PYTBEAGLEHON_DEBUG_PRINTF1("Could not alloc eigenSolutionStructs[%d] in allocateLikeCalcInstanceFields\n", i);
 			goto errorExit;
 		}
+		t->eigenSolutionStructs[i]->beagleEigenBufferIndex = i;
 	}
     
 

@@ -133,11 +133,19 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
             }
             Py_INCREF(item);
             if (!PyType_IsSubtype(item->ob_type, &asrv_type)) {
-                Py_DECREF(item);
-                PyErr_SetString(PyExc_IndexError, "Could not extract a ASRVObj from asrvTuple");
-    		    goto errorExit;
+                if (Py_None == (PyObject *) item ) {
+                    asrvObjectArray[i] = 0L;
+                    Py_DECREF(item);
+                } 
+                else {
+                    Py_DECREF(item);
+                    PyErr_SetString(PyExc_IndexError, "Could not extract a ASRVObj from asrvTuple");
+    	    	    goto errorExit;
+    	    	}
             }
-            asrvObjectArray[i] = (ASRVObj *) item;
+            else {
+                asrvObjectArray[i] = (ASRVObj *) item;
+            }
         }
 	}
 	if (numProbMats < 0) {
@@ -152,6 +160,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		PyErr_SetString(PyExc_ValueError, "The number of rescaling buffers cannot be negative");
         goto errorExit;
 	}
+	PYTBEAGLEHON_DEBUG_PRINTF("Calling createLikelihoodCalcInstance\n");
 	handle = createLikelihoodCalcInstance(
 	        numLeaves,
             numPatterns,
@@ -172,6 +181,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 		PyErr_NoMemory();
 		goto errorExit;
 	}
+	PYTBEAGLEHON_DEBUG_PRINTF1("Returning handle for instance %ld\n", handle);
 	return PyInt_FromLong(handle);
 	errorExit:
 	    if (patternWeights != 0)

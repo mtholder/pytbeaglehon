@@ -2,6 +2,8 @@
 #include "phylo_util.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <libhmsbeagle/beagle.h>
+
 
 
 
@@ -208,17 +210,20 @@ EigenSolutionStruct * getEigenSolutionStruct(DSCTModelObj * mod) {
 int recalc_eigen_mat(DSCTModelObj *mod) {
 	unsigned is_complex;
 	int rc;
-
-#	if defined(PRINTING_LOTS) && PRINTING_LOTS
-		printQMat(mod->qMat, mod->dim);
-#	endif
-
+	struct LikeCalculatorInstance * lce = mod->likeCalcInstanceAlias;
 	EigenSolutionStruct * eigenSolutionStruct = getEigenSolutionStruct(mod);
 	EigenCalcScratchpad * eigenCalcScratchpad = (eigenSolutionStruct == 0L ? 0L : eigenSolutionStruct->scratchPad);
+
     if ((eigenSolutionStruct == 0L) || (eigenCalcScratchpad == 0L)) {
 		PyErr_SetString(PyExc_RuntimeError, "Could not get reference to eigen solution storage .");
 		return 0;
 	}
+#	if defined(PRINTING_LOTS) && PRINTING_LOTS
+		printQMat(mod->qMat, mod->dim);
+#	endif
+
+    PYTBEAGLEHON_DEBUG_PRINTF2("Calculating eigensolution for model at %ld in eigenstorage %d\n", (long)mod, eigenSolutionStruct->beagleEigenBufferIndex);
+
 	rc = get_eigens(mod->dim,
 					mod->qMat,
 					eigenSolutionStruct->eigenValues,
@@ -232,6 +237,16 @@ int recalc_eigen_mat(DSCTModelObj *mod) {
 	if (rc == 0) {
 		if (is_complex == 1)
 			PyErr_SetString(PyExc_RuntimeError, "Error: Complex eigenvalues found.");
+		return 0;
+	}
+	
+	rc = beagleSetEigenDecomposition(lce->beagleInstanceIndex,
+                                     eigenSolutionStruct->beagleEigenBufferIndex,
+                                     eigenSolutionStruct->eigenVectors[0],
+                                     eigenSolutionStruct->invEigenVectors[0],
+                                     eigenSolutionStruct->eigenValues);
+    if (rc != BEAGLE_SUCCESS) {
+		PyErr_SetString(PyExc_RuntimeError, "Error: call to beagleSetEigenDecomposition failed.");
 		return 0;
 	}
 	mod->eigenCalcIsDirty = 0;

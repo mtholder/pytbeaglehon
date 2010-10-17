@@ -17,7 +17,7 @@ class DiscStateContTimeModel(object):
         self._char_type = kwargs.get('char_type')
         self._model_index = kwargs.get('model_index')
         self._calc_env = kwargs.get('calc_env')
-        self._asrv = kwargs.get('asrv')
+        self.asrv = kwargs.get('asrv')
         self._owns_calc_env = False
         self._changed_params = set()
         self._q_mat = None
@@ -163,7 +163,9 @@ class DiscStateContTimeModel(object):
     def get_num_prob_models(self):
         return 1
     num_prob_models = property(get_num_prob_models)
-
+    def get_cmodel(self):
+        return self._cmodel
+    cmodel = property(get_cmodel)
 class RevDiscStateContTimeModel(DiscStateContTimeModel):
 
     def __init__(self, **kwargs):
