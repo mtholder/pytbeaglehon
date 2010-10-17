@@ -55,19 +55,6 @@ extern "C"
 
 
 
-/*
-
-
-struct LikeCalculatorInstance;
-
-int likeCalcInstanceValid(struct LikeCalculatorInstance * b);
-int getProbMatIndex(struct LikeCalculatorInstance * b, int *indices, int numIndices);
-*/
-
-
-
-
-
 
 #ifdef __cplusplus
 }

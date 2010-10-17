@@ -167,3 +167,58 @@ PyObject * listToDoubleMatrix(PyObject *list_obj, double **arr, unsigned n_rows,
 	}
 	return none();
 }
+
+
+PyObject * tupleToDoubleArray(PyObject *tuple_obj, double *arr, unsigned n, int demandExactLen) {
+	PyObject *item, *f_item;
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	if (pytuple_len != n && ((demandExactLen != 0) || (pytuple_len < n))) {
+		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n; ++i) {
+		item = PyTuple_GetItem(tuple_obj, i);
+		if (item == 0L) {
+			return 0L;
+		}
+		Py_INCREF(item);
+		f_item = PyNumber_Float(item);
+		if (f_item == 0L) {
+			Py_DECREF(item);
+			return 0L;
+		}
+		arr[i] = PyFloat_AsDouble(item);
+		Py_DECREF(item);
+		Py_DECREF(f_item);
+	}
+	return none();
+}
+
+
+PyObject * tupleToDoubleMatrix(PyObject *tuple_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen) {
+	PyObject *item, *r_item;
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	if (pytuple_len != n_rows && ((demandExactLen != 0) || (pytuple_len < n_rows))) {
+		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n_rows; ++i) {
+		item = PyTuple_GetItem(tuple_obj, i);
+		if (item == 0L) {
+			return 0L;
+		}
+		Py_INCREF(item);
+		if (!PyTuple_Check(item)) {
+			PyErr_SetString(PyExc_TypeError, "tuple of tuple of floats expected");
+			Py_DECREF(item);
+			return 0L;
+		}
+		r_item = tupleToDoubleArray(item, arr[i], n_cols, demandExactLen);
+		Py_DECREF(item);
+		if (0L == r_item)
+			return 0L;
+	}
+	return none();
+}

@@ -84,6 +84,9 @@ int setPatternWeights(long likeCalcHandle, const double * patternWeights);
 
 
 
+
+
+
 #ifdef __cplusplus
 }
 /* end of extern c bit */

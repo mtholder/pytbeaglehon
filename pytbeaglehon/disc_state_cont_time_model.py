@@ -5,7 +5,7 @@
 Wrapper around a discrete-state, continuous time model of character state change.
 """
 from itertools import izip
-from pytbeaglehon import get_logger
+from pytbeaglehon import get_logger, CachingFacets
 from pytbeaglehon.parameter import MutableFloatParameter
 _LOG = get_logger(__name__)
 
@@ -80,21 +80,39 @@ class DiscStateContTimeModel(object):
     
     def get_q_mat_hash(self):
         if self.q_mat_is_dirty():
-            self._q_mat_hash = hash(self.q_mat)
+            qm = self.q_mat
+            _LOG.debug('generating hash for %s' % repr(qm))
+            self._q_mat_hash = hash(qm)
         return self._q_mat_hash
     q_mat_hash = property(get_q_mat_hash)
 
     def state_hash(self):
         if  (self._total_state_hash is None) or  self.q_mat_is_dirty() or self.asrv_is_dirty():
-            self._total_state_hash = hash((id(self), self.q_mat_hash, self.asrv_hash))
-            self._prev_asrv_hash = self._asrh_hash
+            self._total_state_hash = hash((id(self), self.q_mat_hash, self._asrv_hash))
+            self._prev_asrv_hash = self._asrv_hash
         return self._total_state_hash
-        
+     
+    def convert_eigen_soln_caching(self, in_eigen_soln_caching):
+        if in_eigen_soln_caching is None:
+            return (CachingFacets.DO_NOT_SAVE,)
+        return (in_eigen_soln_caching,)
+
+    def convert_prob_mat_caching(self, in_prob_mat_caching):
+        if in_prob_mat_caching is None:
+            return (CachingFacets.DO_NOT_SAVE,)
+        return (in_prob_mat_caching,)
 
     def _calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
         state_id = self.state_hash()
-        self._eigen_soln_index = self.calc_env.calc_eigen_soln(q_mat=self.q_mat, state_id=state_id, eigen_soln_caching=eigen_soln_caching)
-        self._prob_mat_indices = self._calc_prob_from_eigen(edge_len, self.asrv, state_id=state_id, prob_mat_caching=prob_mat_caching)
+        esi = self._calc_env.calc_eigen_soln(model=self, 
+                                             state_id=state_id,
+                                             eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
+        self._eigen_soln_index = esi
+        pmi = self._calc_prob_from_eigen(edge_len, 
+                                         self.asrv,
+                                         state_id=state_id,
+                                         prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))
+        self._prob_mat_indices = pmi
         return self._calc_env._get_prob_matrices(self._prob_mat_indices, state_id=state_id)
 
 
@@ -251,7 +269,7 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
             for q_row in qm:
                 for i in xrange(len(q_row)):
                     q_row[i] /= w_mat_sum
-        self._q_mat = tuple(qm)
+        self._q_mat = tuple([tuple(row) for row in qm])
         _LOG.debug("_q_mat = %s" % str(qm))
         return self._q_mat
     

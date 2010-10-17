@@ -11,7 +11,7 @@ extern "C"
 
 #include "pytbeaglehon_defs.h"
 
-struct LikeCalculatorInstance;
+#include "calc_instance.h"
 
 typedef struct {
 		double ** workMat; /*dim by dim*/
@@ -34,6 +34,7 @@ typedef struct {
 EigenSolutionStruct * eigenSolutionStructNew(unsigned dim);
 void eigenSolutionStructDtor(EigenSolutionStruct * p);
 
+struct LikeCalculatorInstance;
 /* Define the type that corresponds to a model (holds the Q-Matrix and other
 	temporary fields used to speed up calculation).
 */
@@ -49,6 +50,8 @@ typedef struct {
 DSCTModelObj * dsctModelNew(unsigned dim);
 
 const DSCTModelObj ** getModelList(long instanceHandle, unsigned int *numModels);
+
+int recalc_eigen_mat(DSCTModelObj *mod);
 
 #ifdef __cplusplus
 }

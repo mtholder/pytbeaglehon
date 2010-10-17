@@ -80,6 +80,12 @@ def get_logger(name="PYT_BEAGLE_HON"):
         ch.setFormatter(logging_formatter)
         logger.addHandler(ch)
     return logger
+
+class CachingFacets:
+    DO_NOT_SAVE = 0
+    SAVE_REPLACE = 1
+    SAVE_ANYWHERE = 2
+
     
 from pytbeaglehon.disc_state_cont_time_model import DiscStateContTimeModel
 from pytbeaglehon.like_calc_environ import LikeCalcEnvironment

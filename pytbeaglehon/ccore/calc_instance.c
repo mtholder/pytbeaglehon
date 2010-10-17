@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libhmsbeagle/beagle.h"
-#include "discrete_state_model.h"
+#include "internal_like_calc_env.h"
 
 
 #if !defined(BUILDING_FOR_PYTHON)
@@ -14,40 +14,6 @@
         PYTBEAGLEHON_DEBUG_PRINTF2("PyErr_SetString(%d, %s)", c, m);
     }
 #endif
-
-/* Each LikeCalculatorInstance contains the internal storage needed to
-    calculate likelihoods for one subset in a (possibly) partitioned matrix.
-
-    Multiple Models may be associate with the instance, but all model share the
-    same number of states.
-
-*/
-typedef struct LikeCalculatorInstance {
-    int beagleInstanceIndex;
-
-	unsigned int numLeaves;
-	unsigned long numPatterns;
-	double * patternWeights;
-	unsigned int numStates;
-	unsigned int numRateCategories;
-	unsigned int numStateCodeArrays;
-	unsigned int numPartialStructs;
-	unsigned int numProbMats;
-	unsigned int numRescalingsMultipliers;
-	int resourceIndex;
-	long resourcePref;
-	long resourceReq;
-	int beagleInstanceCreated;
-
-
-	unsigned int numInstRateModels;
-	DSCTModelObj ** probModelArray;
-	const ASRVObj ** asrvAliasForEachModel; /* length = numInstRateModels */
-    
-	unsigned int numEigenStorage;
-	EigenSolutionStruct ** eigenSolutionStructs;
-    
-} LikeCalculatorInstance;
 
 static struct LikeCalculatorInstance ** gAllInstances = 0;
 static unsigned gLenAllInstancesArray = 0;
@@ -122,7 +88,7 @@ long createNewLikeCalculatorInstance(void) {
 	assert (gAllInstances[destination] == 0L);
 
 	newInstance = (struct LikeCalculatorInstance *)malloc(sizeof(struct LikeCalculatorInstance));
-	PYTBEAGLEHON_DEBUG_PRINTF2("New LikeCalculatorInstance at %ld stored in global array %d\n", (long) newInstance, destination);
+	PYTBEAGLEHON_DEBUG_PRINTF2("New struct LikeCalculatorInstance at %ld stored in global array %d\n", (long) newInstance, destination);
 	if (newInstance == 0L)
 		goto errorExit;
 	gAllInstances[destination] = newInstance;
@@ -150,7 +116,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 	int * resourceListPtr = 0L;
 	int resourceListLen = 0;
 	if (!t) {
-		PYTBEAGLEHON_DEBUG_PRINTF("EMPTY LikeCalculatorInstance in allocateLikeCalcInstanceFields\n");
+		PYTBEAGLEHON_DEBUG_PRINTF("EMPTY struct LikeCalculatorInstance in allocateLikeCalcInstanceFields\n");
 		return 0;
 	}
     t->patternWeights = 0L;
@@ -356,11 +322,11 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 #       endif
 
 	}
-	PYTBEAGLEHON_DEBUG_PRINTF("freeing LikeCalculatorInstance->probModelArray...\n");
+	PYTBEAGLEHON_DEBUG_PRINTF("freeing struct LikeCalculatorInstance->probModelArray...\n");
 	free(inst->probModelArray);
 	inst->probModelArray = 0L;
 
-	PYTBEAGLEHON_DEBUG_PRINTF("freeing LikeCalculatorInstance->eigenSolutionStructs elements...\n");
+	PYTBEAGLEHON_DEBUG_PRINTF("freeing struct LikeCalculatorInstance->eigenSolutionStructs elements...\n");
 	for (i = 0; i < inst->numEigenStorage; ++i) {
 		eigenSolutionStructDtor(inst->eigenSolutionStructs[i]);
 		inst->eigenSolutionStructs[i] = 0L;

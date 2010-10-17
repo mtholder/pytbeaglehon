@@ -1,4 +1,4 @@
-#include "discrete_state_model.h"
+#include "internal_like_calc_env.h"
 #include "phylo_util.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -181,6 +181,61 @@ void eigenSolutionStructDtor(EigenSolutionStruct * p) {
 	eigenSolutionScratchpadDtor(p->scratchPad);
 	free(p);
     PYTBEAGLEHON_DEBUG_PRINTF("finished eigenSolutionStructDtor\n"); 
+}
+
+
+
+EigenSolutionStruct * getEigenSolutionStruct(DSCTModelObj * mod) {
+	assert(mod);
+	struct LikeCalculatorInstance * lce = mod->likeCalcInstanceAlias;
+	if (!mod && !(lce))
+	    return 0L;
+	
+	if (lce->numEigenStorage <= mod->eigenBufferIndex)
+	    return 0L;
+	return lce->eigenSolutionStructs[mod->eigenBufferIndex];
+}
+
+
+
+/**
+ * Recalculates the eigensystem and temporaries.  Returns 0 if any steps fail
+ *  or the complex eigenvalues are encountered.
+ *
+ *	\Returns 0 to indicate failure (if this happens PyErr_SetString will have
+ *		been called).
+ */
+int recalc_eigen_mat(DSCTModelObj *mod) {
+	unsigned is_complex;
+	int rc;
+
+#	if defined(PRINTING_LOTS) && PRINTING_LOTS
+		printQMat(mod->qMat, mod->dim);
+#	endif
+
+	EigenSolutionStruct * eigenSolutionStruct = getEigenSolutionStruct(mod);
+	EigenCalcScratchpad * eigenCalcScratchpad = (eigenSolutionStruct == 0L ? 0L : eigenSolutionStruct->scratchPad);
+    if ((eigenSolutionStruct == 0L) || (eigenCalcScratchpad == 0L)) {
+		PyErr_SetString(PyExc_RuntimeError, "Could not get reference to eigen solution storage .");
+		return 0;
+	}
+	rc = get_eigens(mod->dim,
+					mod->qMat,
+					eigenSolutionStruct->eigenValues,
+					eigenSolutionStruct->imEigenValues,
+					eigenSolutionStruct->eigenVectors,
+					eigenSolutionStruct->invEigenVectors,
+					eigenCalcScratchpad->workMat,
+					eigenCalcScratchpad->dWork,
+					eigenCalcScratchpad->iWork,
+					&is_complex);
+	if (rc == 0) {
+		if (is_complex == 1)
+			PyErr_SetString(PyExc_RuntimeError, "Error: Complex eigenvalues found.");
+		return 0;
+	}
+	mod->eigenCalcIsDirty = 0;
+	return 1;
 }
 
 

@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 import itertools
-from pytbeaglehon.ccore.disc_state_cont_time_model import cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, cget_comp_resource_info, cget_model_list
+from pytbeaglehon.ccore.disc_state_cont_time_model import cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat
 from pytbeaglehon import DiscStateContTimeModel
-from pytbeaglehon import get_logger
+from pytbeaglehon import get_logger, CachingFacets
 
 _LOG = get_logger(__name__)
-
+_EMPTY_SET = set()
 class BeagleResourceFlags:
     PRECISION_SINGLE    = 1 << 0 #  Single precision computation 
     PRECISION_DOUBLE    = 1 << 1 #  Double precision computation 
@@ -65,6 +65,7 @@ class LikeCalcEnvironment(object):
         _LOG.debug("calling query_comp_resource_info for %d" % self._resource_index)
         return LikeCalcEnvironment.query_comp_resource_info(self._resource_index)
     comp_resource_info = property(get_comp_resource_info)
+
     def __init__(self, **kwargs):
         """Creates an new instance of a likelihood calculation context 
         this is necessary because beagle does not support adding memory to an
@@ -125,6 +126,7 @@ class LikeCalcEnvironment(object):
             return tuple(self._model_list)
         nm = self.num_model_matrices
         return tuple([None]*nm)
+
     def set_model_list(self, v):
         if v is None:
             self._model_list = v
@@ -317,7 +319,7 @@ class LikeCalcEnvironment(object):
 
     def _do_beagle_init(self):
         if self._incarnated:
-                raise ValueError("Calculation instance has already been initialized. Duplicate intialization is not allowed")
+            raise ValueError("Calculation instance has already been initialized. Duplicate intialization is not allowed")
         _LOG.debug("Calling cpytbeaglehon_init")
         asrv = self.asrv_list
         if self._resource_index is None:
@@ -375,7 +377,15 @@ class LikeCalcEnvironment(object):
             self._model_list = tuple(model_list)
         
         self._incarnated = True
-
+        
+        # caching is implemented by keeping a free, saved and calculated pool.
+        #   if a new slot is needed, the free pool will be used, if it is empty
+        #   then the calculated pool will be used. If that is also empty, then 
+        #   a ValueError will be raised.
+        self._free_eigen_storage_structs = set(xrange(self.num_eigen_storage_structs))
+        self._saved_eigen_storage_structs = {} # eigen solution index to state_id
+        self._calculated_eigen_storage_structs = {} # eigen solution index to state_id
+        self._cached_eigen = {} # state_id to eigen solution index
     def __del__(self):
         self.release_resources()
 
@@ -386,3 +396,36 @@ class LikeCalcEnvironment(object):
             self._model_list = ()
             self._handle = None
             self._incarnated = False
+
+    def calc_eigen_soln(self, model, state_id, eigen_soln_caching=(CachingFacets.DO_NOT_SAVE,)):
+        if not self._incarnated:
+            self._do_beagle_init()
+        cf = eigen_soln_caching[0]
+        if cf == CachingFacets.REPLACE:
+            raise NotImplementedError("REPLACE of eigen structures not supported")
+        else:
+            if self._free_eigen_storage_structs == _EMPTY_SET:
+                if self._calculated_eigen_storage_structs == _EMPTY_SET:
+                    raise ValueError("No eigen solution structures available!")
+                es_index = iter(self._calculated_eigen_storage_structs).next()
+                cached_state_id = self._calculated_eigen_storage_structs[es_index]
+                if cached_state_id in self._cached_eigen[cached_state_id]:
+                    del self._cached_eigen[cached_state_id]
+                del self._calculated_eigen_storage_structs[es_index]
+            else:
+                es_index = iter(self._free_eigen_storage_structs).next()
+                self._free_eigen_storage_structs.remove(es_index)
+        
+        cdsctm_set_q_mat(model.cmodel, model.q_mat)
+        try:
+            cdsctm_calc_eigens(model.cmodel, es_index)
+        except:
+            self._free_eigen_storage_structs.add(es_index)
+            raise
+        self._cached_eigen[state_id] = es_index
+        if cf == CachingFacets.DO_NOT_SAVE:
+            self._calculated_eigen_storage_structs[es_index] = state_id
+        else:
+            self._saved_eigen_storage_structs[es_index] = state_id
+        return es_index
+            

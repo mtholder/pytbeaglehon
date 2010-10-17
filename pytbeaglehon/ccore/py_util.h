@@ -41,6 +41,8 @@ PyObject * doubleMatToList(const double **arr, unsigned n_rows, unsigned n_cols)
 PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_rows, unsigned n_cols);
 PyObject * listToDoubleArray(PyObject *list_obj, double *arr, unsigned n, int demandExactLen);
 PyObject * listToDoubleMatrix(PyObject *list_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen);
+PyObject * tupleToDoubleArray(PyObject *tuple_obj, double *arr, unsigned n, int demandExactLen);
+PyObject * tupleToDoubleMatrix(PyObject *tuple_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen);
 
 
 #ifdef __cplusplus

@@ -127,8 +127,9 @@ ext_source_files =[ "asrv.c",
                     "discrete_state_model.c",
                     "phylo_util.c",
                     "py_asrv.c",
-                    "py_calc_instance.c",
                     "py_beagle.c", 
+                    "py_calc_instance.c",
+                    "py_discrete_state_model.c",
                     "py_util.c", 
                   ]
 ext_sources = [os.path.join(src_prefix, i) for i in ext_source_files]

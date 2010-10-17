@@ -17,6 +17,7 @@
 #include "py_util.h"
 #include "asrv.h"
 #include "py_calc_instance.h"
+#include "py_discrete_state_model.h"
 
 
 /* exception class (will be assigned in initdsct_model) */
@@ -112,6 +113,11 @@ static PyMethodDef dsct_model_module_functions[] = {
 	{"cget_model_list", pyGetModelList, METH_VARARGS,
 		"Takes the instance handle and returns a tuple with reference to each of the DSCTModelObj objects allocated by the instance"},
 
+    /* calls to a DSCTModelObj object  */
+	{"cdsctm_set_q_mat", cdsctm_set_q_mat, METH_VARARGS,
+		"Replaces the Q-matrix (takes a tuple of tuple of floats)."},
+	{"cdsctm_calc_eigens", cdsctm_calc_eigens, METH_VARARGS,
+		"Calculates the eigen solution for a model. Takes the model and the index of the eigen solution storage"},
 
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,
 		"intializer -- takes shape parameter, ncat, dcst_model.RateHetType facet."},
