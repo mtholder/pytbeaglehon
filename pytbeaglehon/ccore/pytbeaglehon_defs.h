@@ -39,6 +39,7 @@ extern "C"
 #	define PYTBEAGLEHON_DEBUG_PRINTF2(v,a,aa) (printf(v,a,aa))
 #	define PYTBEAGLEHON_DEBUG_PRINTF3(v,a,aa,aaa) (printf(v,a,aa,aaa))
 #	define PYTBEAGLEHON_DEBUG_PRINTF4(v,a,aa,aaa, aaaa) (printf(v, (a),(aa), (aaa), (aaaa)))
+#	define PYTBEAGLEHON_DEBUG_PRINTF5(v,a,aa,aaa, aaaa, aaaaa) (printf(v, (a),(aa), (aaa), (aaaa), (aaaaa)))
 #else
 
 #	define PYTBEAGLEHON_DEBUG_PRINTF(v)
@@ -46,6 +47,7 @@ extern "C"
 #	define PYTBEAGLEHON_DEBUG_PRINTF2(v,a,aa)
 #	define PYTBEAGLEHON_DEBUG_PRINTF3(v,a,aa,aaa)
 #	define PYTBEAGLEHON_DEBUG_PRINTF4(v,a,aa,aaa, aaaa)
+#	define PYTBEAGLEHON_DEBUG_PRINTF5(v,a,aa,aaa, aaaa,  aaaaa)
 
 #endif
 

@@ -28,7 +28,7 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 	DSCTModelObj * dsct_model_obj;
 	if (!PyArg_ParseTuple(args, "O!i", &dsct_model_type, &dsct_model_py_obj, &eigenIndex))
 		return 0L;
-	PYTBEAGLEHON_DEBUG_PRINTF2("Setting cdsctm_calc_eigens(%ld, %d)\n", (long) dsct_model_py_obj, eigenIndex);
+	PYTBEAGLEHON_DEBUG_PRINTF2("In C. calling cdsctm_calc_eigens(%ld, %d)\n", (long) dsct_model_py_obj, eigenIndex);
 	dsct_model_obj = (DSCTModelObj *)(dsct_model_py_obj);
 	dsct_model_obj->eigenBufferIndex = eigenIndex;
 	dsct_model_obj->eigenCalcIsDirty = 1;

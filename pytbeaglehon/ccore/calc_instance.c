@@ -119,6 +119,8 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 	unsigned int i;
 	int * resourceListPtr = 0L;
 	int resourceListLen = 0;
+	unsigned numRateCategoriesOnBeagle = 1;
+	double rateOfOne = 1.0;
 	if (!t) {
 		PYTBEAGLEHON_DEBUG_PRINTF("EMPTY struct LikeCalculatorInstance in allocateLikeCalcInstanceFields\n");
 		return 0;
@@ -229,6 +231,9 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->resourceReq,
                                                   &beagleInstanceDetails);
 	t->beagleInstanceCreated = 1;
+    if (numRateCategoriesOnBeagle == 1)
+        beagleSetCategoryRates(t->beagleInstanceIndex, &rateOfOne);
+
 	return 1L;
 	errorExit:
 		PYTBEAGLEHON_DEBUG_PRINTF("allocateLikeCalcInstanceFields errorExit\n");
@@ -427,6 +432,7 @@ int calcPrMats(long handle,
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
     bEigen = ess->beagleEigenBufferIndex;
+    PYTBEAGLEHON_DEBUG_PRINTF5("In C. calling beagleUpdateTransitionMatrices(%d, %d, [%d...], 0, 0, [%lf...],%d)\n", (int) lci->beagleInstanceIndex, bEigen, *probMatIndexArray, *edgeLenArray, numToCalc); 
     return beagleUpdateTransitionMatrices(lci->beagleInstanceIndex,
                                    bEigen,
                                    probMatIndexArray,
@@ -439,14 +445,18 @@ int calcPrMats(long handle,
 
 int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
     struct LikeCalculatorInstance * lci;
+    int rc;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || probMatIndex >= lci->numProbMats) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
-    return beagleGetTransitionMatrix(lci->beagleInstanceIndex,
+    PYTBEAGLEHON_DEBUG_PRINTF2("In C. calling beagleGetTransitionMatrix(%d, %d, ...)\n", (int) lci->beagleInstanceIndex, probMatIndex); 
+    rc = beagleGetTransitionMatrix(lci->beagleInstanceIndex,
 								     probMatIndex,
 								     flattenedMat);
+    PYTBEAGLEHON_DEBUG_PRINTF2("In C. First two elements from beagleGetTransitionMatrix = %lf, %lf, ...\n" , flattenedMat[0], flattenedMat[1]); 
     
+    return rc;
 }
 
 /**

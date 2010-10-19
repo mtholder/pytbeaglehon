@@ -421,6 +421,7 @@ class LikeCalcEnvironment(object):
     def calc_eigen_soln(self, model, state_id, eigen_soln_caching=(CachingFacets.DO_NOT_SAVE,)):
         if not self._incarnated:
             self._do_beagle_init()
+        _LOG.debug("LikeCalcEnvironment.calc_eigen_soln model=%d state_id=%s eigen_soln_caching=%s" % (id(model), str(state_id), str(eigen_soln_caching)))
         cf = eigen_soln_caching[0]
         if cf == CachingFacets.SAVE_REPLACE:
             raise NotImplementedError("REPLACE of eigen structures not supported")
@@ -430,7 +431,7 @@ class LikeCalcEnvironment(object):
                     raise ValueError("No eigen solution structures available!")
                 es_index = iter(self._calculated_eigen_storage_structs).next()
                 cached_state_id = self._calculated_eigen_storage_structs[es_index]
-                if cached_state_id in self._cached_eigen[cached_state_id]:
+                if cached_state_id in self._cached_eigen:
                     del self._cached_eigen[cached_state_id]
                 del self._calculated_eigen_storage_structs[es_index]
             else:
@@ -439,6 +440,7 @@ class LikeCalcEnvironment(object):
         
         cdsctm_set_q_mat(model.cmodel, model.q_mat)
         try:
+            _LOG.debug("Calling cdsctm_calc_eigens(%d, %d)" % (id(model), es_index))
             cdsctm_calc_eigens(model.cmodel, es_index)
         except:
             self._free_eigen_storage_structs.add(es_index)
@@ -454,6 +456,7 @@ class LikeCalcEnvironment(object):
     def calc_prob_from_eigen(self, edge_len, asrv, eigen_soln_index, eigen_state_id, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
         if not self._incarnated:
             self._do_beagle_init()
+        _LOG.debug("LikeCalcEnvironment.calc_prob_from_eigen edge_len=%f asrv=%s eigen_soln_index=%s eigen_state_id=%s prob_mat_caching=%s" % (float(edge_len), str(asrv), str(eigen_soln_index), str(eigen_state_id), str(prob_mat_caching)))
         assert(eigen_soln_index < self.num_eigen_storage_structs)
         assert(eigen_soln_index == self._cached_eigen[eigen_state_id])
         cf = prob_mat_caching[0]
@@ -469,11 +472,11 @@ class LikeCalcEnvironment(object):
             prmat_index_list = []
             for rate_categ in range(nc):
                 if self._free_prob_matrices == _EMPTY_SET:
-                    if self._calculated_prob == _EMPTY_DICT:
+                    if self._calculated_prob_matrices == _EMPTY_DICT:
                         raise ValueError("No prob matrices available!")
                     prmat_index = iter(self._calculated_prob_matrices).next()
                     cached_state_id = self._calculated_prob_matrices[prmat_index]
-                    if cached_state_id in self._cached_prob_matrices[cached_state_id]:
+                    if cached_state_id in self._cached_prob_matrices:
                         del self._cached_prob_matrices[cached_state_id]
                     del self._calculated_prob_matrices[prmat_index]
                 else:
@@ -482,6 +485,7 @@ class LikeCalcEnvironment(object):
                 prmat_index_list.append(prmat_index)
         effective_edge_lengths = [edge_len*rm for rm in rates]
         try:
+            _LOG.debug("Calling cdsctm_calc_pr_mats(%d, %d, %s, %s)" % (self._handle, eigen_soln_index, str(effective_edge_lengths), str(prmat_index_list)))
             cdsctm_calc_pr_mats(self._handle, eigen_soln_index, effective_edge_lengths, prmat_index_list)
         except:
             self._free_prob_matrices.add(*prmat_index_list)
@@ -498,6 +502,7 @@ class LikeCalcEnvironment(object):
         return to_return
 
     def get_prob_matrices(self, index_list=None, index_and_state_list=None):
+        _LOG.debug("LikeCalcEnvironment.get_prob_matrices index_list=%s index_and_state_list=%s" % (str(index_list), str(index_and_state_list)))
         if index_list is None:
             index_list = []
             if index_and_state_list is None:
@@ -517,6 +522,7 @@ class LikeCalcEnvironment(object):
             for ind in index_list:
                 if (ind not in self._calculated_prob_matrices) and (ind not in self._saved_prob_matrices):
                     raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
+        _LOG.debug("Calling cdsctm_get_pr_mats(%d, %s)" % (self._handle, str(index_list)))
         return cdsctm_get_pr_mats(self._handle, index_list)
            
 def combine_state_id(*valist):

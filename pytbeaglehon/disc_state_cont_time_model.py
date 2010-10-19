@@ -55,7 +55,9 @@ class DiscStateContTimeModel(object):
     def q_mat_is_dirty(self):
         return (self._changed_params != _EMPTY_SET)
 
-    def asrv_is_dirty():
+    def asrv_is_dirty(self):
+        if self.asrv is None:
+            return False
         self._asrh_hash = self.asrv.state_hash()
         return self._asrh_hash != self._prev_asrv_hash
 

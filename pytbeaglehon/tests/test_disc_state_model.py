@@ -12,14 +12,18 @@ from pytbeaglehon.tests.util import *
 from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel
 
 class ModelTest(unittest.TestCase):
+    def test_jc_probs(self):
+        jc = JukesCantorModel()
+        nc, c = 0.99006637135539677, 0.0033112095482010773
+        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.01), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
+        nc, c = 1.0, 0.0
+        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.0), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
+class Skip:
     def test_jc_q_mat(self):
         jc = JukesCantorModel()
         _LOG.debug("jc.q_mat = %s" % str(jc.q_mat))
         assert_mat_eq(self, jc.q_mat, [[-1.0, 1.0/3, 1.0/3, 1.0/3], [1.0/3, -1.0, 1.0/3, 1.0/3], [1.0/3, 1.0/3, -1.0, 1.0/3], [ 1.0/3, 1.0/3, 1.0/3, -1.0]])
-    def test_jc_probs(self):
-        jc = JukesCantorModel()
-        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.0), [[[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0.0, 0.0, 1.0, 0.0], [ 0, 0, 0, 1.0]]])
-class Skip:
+
     def test_rev_init(self):
         b = DNAType()
         a = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=b)
