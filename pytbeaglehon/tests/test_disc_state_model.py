@@ -9,7 +9,7 @@ _LOG = get_logger(__name__)
 
 from pytbeaglehon.tests.util import *
 # pylint: disable-msg=C0111,W0401,W0611,W0212
-from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel
+from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel
 
 class ModelTest(unittest.TestCase):
     def test_jc_probs(self):
@@ -18,24 +18,20 @@ class ModelTest(unittest.TestCase):
         assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.01), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
         nc, c = 1.0, 0.0
         assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.0), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
-class Skip:
     def test_jc_q_mat(self):
         jc = JukesCantorModel()
         _LOG.debug("jc.q_mat = %s" % str(jc.q_mat))
         assert_mat_eq(self, jc.q_mat, [[-1.0, 1.0/3, 1.0/3, 1.0/3], [1.0/3, -1.0, 1.0/3, 1.0/3], [1.0/3, 1.0/3, -1.0, 1.0/3], [ 1.0/3, 1.0/3, 1.0/3, -1.0]])
-
     def test_rev_init(self):
         b = DNAType()
-        a = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=b)
-        print id(a.char_type)
-    def test_two(self):
-        d = DNAType()
-        c = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=d)
-        print id(c.char_type)
+        a = RevDiscStateContTimeModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=b)
+        self.assertEqual(a.char_type, b)
     def test_init(self):
-        m = Kimura2ParameterModel(2.3)
-        print id(m.char_type)
-        self.assertEqual(bool(m), True)
+        m = Kimura2ParameterModel(2.0)
+        nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+class Skip:
+
     def test_bad(self):
         self.assertRaises(ValueError, RevDiscreteModel, [])
         self.assertRaises(ValueError, RevDiscreteModel, [[0,1],[.5,0]])

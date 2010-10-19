@@ -46,6 +46,10 @@ class DiscStateContTimeModel(object):
         self._total_state_hash = None
         self._changed_params.add(p)
 
+    def get_char_type(self):
+        return self._char_type
+    char_type = property(get_char_type)
+
     def get_num_states(self):
         if self._char_type is None:
             return None
@@ -170,6 +174,7 @@ class DiscStateContTimeModel(object):
     def get_cmodel(self):
         return self._cmodel
     cmodel = property(get_cmodel)
+
 class RevDiscStateContTimeModel(DiscStateContTimeModel):
 
     def __init__(self, **kwargs):
@@ -330,10 +335,13 @@ from pytbeaglehon.disc_char_type import *
 class JukesCantorModel(RevDiscStateContTimeModel):
     def __init__(self):
         dna = DNAType()
-        _LOG.debug("Created dna type in JukesCantorModel")
-        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]], char_type=dna, params=[])
-        _LOG.debug("called RevDiscStateContTimeModel.__init__")
+        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]], char_type=dna)
 
+class Kimura2ParameterModel(RevDiscStateContTimeModel):
+    def __init__(self, kappa):
+        dna = DNAType()
+        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], char_type=dna)
+    
 
 def _r_upper_to_r_mat(r_upper):
     """Convert the upper triangle of a symmetric matrix to the full matrix with 
