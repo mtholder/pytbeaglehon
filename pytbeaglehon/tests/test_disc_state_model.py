@@ -30,6 +30,7 @@ class ModelTest(unittest.TestCase):
         m = Kimura2ParameterModel(2.0)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
         assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        self.assertRaises(TypeError, Kimura2ParameterModel)
 class Skip:
 
     def test_bad(self):
