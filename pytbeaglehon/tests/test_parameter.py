@@ -20,6 +20,17 @@ class ParameterTest(unittest.TestCase):
         mfp.value = 2.5
         self.assertEqual(mfp.value, 2.5)
         self.assertRaises(ValueError, mfp.set_value, "bogus")
+        x = ProbabilityVectorParameter([0.5, 0.5])        
+        self.assertRaises(ValueError, ProbabilityVectorParameter, [1])
+        self.assertRaises(ValueError, ProbabilityVectorParameter, "hi")
+        self.assertRaises(ValueError, ProbabilityVectorParameter, [.7, .2])
+        self.assertRaises(ValueError, ProbabilityVectorParameter, [MutableFloatParameter(.5), .5])
+        f, s = MutableFloatParameter(.5), MutableFloatParameter(.5)
+        h = ProbabilityVectorParameter([f, s])
+        f.value = .4
+        self.assertAlmostEqual(s.value, 0.6, places=5)
+        self.assertRaises(ValueError, f.set_value, 1.1)
+        self.assertRaises(ValueError, f.set_value, -.1)
         
 # pylint: disable-msg=C0103
 def getTestSuite():

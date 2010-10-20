@@ -6,7 +6,7 @@ Wrapper around a discrete-state, continuous time model of character state change
 """
 from itertools import izip
 from pytbeaglehon import get_logger, CachingFacets
-from pytbeaglehon.parameter import MutableFloatParameter
+from pytbeaglehon.parameter import Parameter, FloatParameter, MutableFloatParameter, ProbabilityVectorParameter
 _LOG = get_logger(__name__)
 
 _EMPTY_SET = set()
@@ -30,9 +30,12 @@ class DiscStateContTimeModel(object):
         param_list = kwargs.get('param_list')
         if param_list is not None:
             for p in param_list:
+                _LOG.debug("Model %s registering self as listener of parameter %s" % (str(self), str(p)))
                 p.add_listener(self.param_changed)
         self._changed_params.add(None) # having a non-empty set assures that the q_mat will be recognized as dirty
-
+    
+    def __str__(self):
+        return 'DiscStateContTimeModel for %s with asrv=%s at %d' % (str(self.char_type), str(self.asrv), id(self))
     def calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
         '''Returns a list containing a transition probability matrix for each rate category.'''
         self._incarnate()
@@ -41,6 +44,7 @@ class DiscStateContTimeModel(object):
 
     def param_changed(self, p):
         '''Adds `p` to this list of changed_parameters.'''
+        _LOG.debug("Model %s learned that %s changed." % (str(self), str(p)))
         if self._total_state_hash is not None:
             self._prev_state_hash = self._total_state_hash
         self._total_state_hash = None
@@ -257,7 +261,7 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
             is rescaled such that each row sums to 0.0 and the weighted 
             average of the diagonal elements is -1.0 (with the weight being the
             associated equilibrium frequency)."""
-        _LOG.debug("in self.calc_q_mat: _r_mat = %s _state_freq = %s" % (str(self._r_mat), str(self._state_freq)))
+        _LOG.debug("in self.calc_q_mat: _r_mat = %s _state_freq = %s" % (repr(self._r_mat), str(self._state_freq)))
         ns = self.num_states
         qr = [0.0] * ns
         qm = [list(qr) for i in range(ns)]
@@ -336,12 +340,39 @@ class JukesCantorModel(RevDiscStateContTimeModel):
     def __init__(self):
         dna = DNAType()
         RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]], char_type=dna)
+    def __str__(self):
+        return 'JukesCantorModel at %d' % id(self)
 
 class Kimura2ParameterModel(RevDiscStateContTimeModel):
     def __init__(self, kappa):
         dna = DNAType()
+        if isinstance(kappa, Parameter):
+            if kappa.name is None:
+                kappa.name = 'kappa'
+        else:
+            kappa = FloatParameter(value=kappa, name='kappa')
         RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], char_type=dna)
-    
+    def __str__(self):
+        return 'Kimura2ParameterModel at %d' % id(self)
+
+class HKY85Model(RevDiscStateContTimeModel):
+    def __init__(self, kappa, state_freq):
+        dna = DNAType()
+        if isinstance(kappa, Parameter):
+            if kappa.name is None:
+                kappa.name = 'kappa'
+        else:
+            kappa = FloatParameter(value=kappa, name='kappa')
+        if isinstance(state_freq, Parameter):
+            if state_freq.name is None:
+                state_freq.name = 'base-frequency vector'
+        else:
+            if len(state_freq) != 4:
+                raise ValueError("state_freq must be of length 4")
+            state_freq = ProbabilityVectorParameter(state_freq, name='base-frequency vector')
+        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], state_freq=state_freq, char_type=dna)
+    def __str__(self):
+        return 'HKY85Model at %d' % id(self)
 
 def _r_upper_to_r_mat(r_upper):
     """Convert the upper triangle of a symmetric matrix to the full matrix with 

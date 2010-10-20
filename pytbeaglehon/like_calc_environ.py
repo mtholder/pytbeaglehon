@@ -423,9 +423,24 @@ class LikeCalcEnvironment(object):
             self._do_beagle_init()
         _LOG.debug("LikeCalcEnvironment.calc_eigen_soln model=%d state_id=%s eigen_soln_caching=%s" % (id(model), str(state_id), str(eigen_soln_caching)))
         cf = eigen_soln_caching[0]
+        
+        es_index = self._cached_eigen.get(state_id)
+
+            
         if cf == CachingFacets.SAVE_REPLACE:
+            if (es_index is not None) and (es_index == eigen_soln_caching[1]):
+                return es_index
             raise NotImplementedError("REPLACE of eigen structures not supported")
         else:
+            if es_index is not None:
+                if cf == CachingFacets.SAVE_ANYWHERE:
+                    if es_index in self._calculated_eigen_storage_structs:
+                        del self._calculated_eigen_storage_structs[es_index]
+                        self._saved_eigen_storage_structs[es_index] == state_id
+                    else:
+                        assert(es_index in self._saved_eigen_storage_structs)
+                return es_index
+                
             if self._free_eigen_storage_structs == _EMPTY_SET:
                 if self._calculated_eigen_storage_structs == _EMPTY_DICT:
                     raise ValueError("No eigen solution structures available!")

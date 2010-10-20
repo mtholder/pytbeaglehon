@@ -9,9 +9,18 @@ _LOG = get_logger(__name__)
 
 from pytbeaglehon.tests.util import *
 # pylint: disable-msg=C0111,W0401,W0611,W0212
-from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel
+from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel, MutableFloatParameter
 
 class ModelTest(unittest.TestCase):
+    def test_change_kappa(self):
+        mp = MutableFloatParameter(2.0)
+        m = Kimura2ParameterModel(mp)
+        nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        mp.value = 1.0
+        nc, ti, tv = 0.951630238774, 0.0161232537421, 0.0161232537421
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
     def test_jc_probs(self):
         jc = JukesCantorModel()
         nc, c = 0.99006637135539677, 0.0033112095482010773
@@ -26,11 +35,13 @@ class ModelTest(unittest.TestCase):
         b = DNAType()
         a = RevDiscStateContTimeModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=b)
         self.assertEqual(a.char_type, b)
-    def test_init(self):
+    def test_initk2p(self):
         m = Kimura2ParameterModel(2.0)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
         assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
         self.assertRaises(TypeError, Kimura2ParameterModel)
+        self.assertRaises(ValueError, Kimura2ParameterModel, 'hi there')
+        
 class Skip:
 
     def test_bad(self):
@@ -96,6 +107,8 @@ def getTestSuite():
 
 if __name__ == "__main__":
     unittest.main()
+    print "SKIPPING TESTS!!!"
+
 
 
 ##############################################################################

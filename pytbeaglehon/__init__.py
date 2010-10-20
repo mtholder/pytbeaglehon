@@ -86,6 +86,8 @@ class CachingFacets:
     SAVE_REPLACE = 1
     SAVE_ANYWHERE = 2
 
+def approx_equal(f, s, tol):
+    return abs(f - s <= tol)
     
 from pytbeaglehon.disc_state_cont_time_model import DiscStateContTimeModel
 from pytbeaglehon.like_calc_environ import LikeCalcEnvironment
