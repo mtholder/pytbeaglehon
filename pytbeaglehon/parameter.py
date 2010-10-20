@@ -91,6 +91,14 @@ class FloatParameter(Parameter):
         return float(self) * other
     def __div__(self, other):
         return float(self) / other
+    def __radd__(self, other):
+        return other + float(self) 
+    def __rsub__(self, other):
+        return other - float(self)
+    def __rmul__(self, other):
+        return other * float(self)
+    def __rdiv__(self, other):
+        return other / float(self)
     def __repr__(self):
         return 'FloatParameter(%s)' % repr(self.value)
     def __str__(self):
@@ -156,7 +164,8 @@ class ProbabilityVectorParameter(Parameter):
                 n = o._value * o_factor
                 o.set_value(n, notify_parent=False)
             
-
+    def __iter__(self):
+        return iter(self.sub_parameters)
         
 
 ##############################################################################

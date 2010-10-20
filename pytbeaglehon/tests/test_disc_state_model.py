@@ -9,7 +9,8 @@ _LOG = get_logger(__name__)
 
 from pytbeaglehon.tests.util import *
 # pylint: disable-msg=C0111,W0401,W0611,W0212
-from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel, MutableFloatParameter
+from pytbeaglehon.parameter import MutableFloatParameter
+from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel, HKY85Model
 
 class ModelTest(unittest.TestCase):
     def test_change_kappa(self):
@@ -41,6 +42,11 @@ class ModelTest(unittest.TestCase):
         assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
         self.assertRaises(TypeError, Kimura2ParameterModel)
         self.assertRaises(ValueError, Kimura2ParameterModel, 'hi there')
+        
+    def test_inithky(self):
+        m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
+        nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
         
 class Skip:
 

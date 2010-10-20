@@ -370,6 +370,8 @@ class HKY85Model(RevDiscStateContTimeModel):
             if len(state_freq) != 4:
                 raise ValueError("state_freq must be of length 4")
             state_freq = ProbabilityVectorParameter(state_freq, name='base-frequency vector')
+        for s, p in izip(dna.states, state_freq):
+            p.name = 'freq_' + s
         RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], state_freq=state_freq, char_type=dna)
     def __str__(self):
         return 'HKY85Model at %d' % id(self)
