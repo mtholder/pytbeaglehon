@@ -3,9 +3,42 @@
 # (see bottom of file)
 import ez_setup
 import sys, os
-ez_setup.use_setuptools()
-
 from setuptools import setup, find_packages, Extension
+
+###############################################################################
+# setuptools/distutils/etc. import and configuration
+
+try:
+    import ez_setup
+    try:
+        ez_setup_path = " ('" + os.path.abspath(ez_setup.__file__) + "')"
+    except OSError:
+        ez_setup_path = ""
+    sys.stderr.write("using ez_setup%s\n" %  ez_setup_path)
+    ez_setup.use_setuptools()
+    import setuptools
+    try:
+        setuptools_path = " ('" +  os.path.abspath(setuptools.__file__) + "')"
+    except OSError:
+        setuptools_path = ""
+    sys.stderr.write("using setuptools%s\n" % setuptools_path)
+    from setuptools import setup, find_packages
+except ImportError, e:
+    sys.stderr.write("using distutils\n")
+    from distutils.core import setup
+    sys.stderr.write("using canned package list\n")
+    PACKAGES = ['pytbeaglehon',
+                'pytbeaglehon.ccore',
+               ]
+    EXTRA_KWARGS = {}
+else:
+    sys.stderr.write("searching for packages\n")
+    PACKAGES = find_packages()
+    EXTRA_KWARGS = dict(
+        install_requires = ['setuptools'],
+        include_package_data=True,
+        test_suite = "pytbeaglehon.tests"
+    )
 
 args = sys.argv
 help_msg = """
@@ -35,6 +68,7 @@ BEAGLE_DEPENDENCY_LIB_DIR The directory that holds libraries that beagle needs
 NCL_PREFIX  The directory used as the prefix for the NCL install (only used 
     --use-ncl
 """
+
 if ("--help" in args) or ("-h" in args):
     sys.stderr.write(help_msg)
 if "--debug" in args:
@@ -55,6 +89,26 @@ if "--use-ncl" in args:
     have_ncl = 1
 else:
     have_ncl = 0
+
+
+
+
+
+
+
+
+
+PACKAGE_DIRS = [p.replace(".", os.path.sep) for p in PACKAGES]
+PACKAGE_INFO = [("% 40s : %s" % p) for p in zip(PACKAGES, PACKAGE_DIRS)]
+sys.stderr.write("packages identified:\n%s\n" % ("\n".join(PACKAGE_INFO)))
+
+SCRIPT_SUBPATHS = [
+    ['scripts', 'gtr_prob_mat.py'],
+]
+SCRIPTS = [os.path.join(*i) for i in SCRIPT_SUBPATHS]
+sys.stderr.write("\nscripts identified: %s\n" % ", ".join(SCRIPTS))
+
+
 
 include_dirs = []
 library_dirs = []
@@ -121,6 +175,17 @@ if using_ncl:
     library_dirs.append(ncl_lib_dir)
     libraries.append('ncl')
 
+
+ENTRY_POINTS = {}
+try:
+    from setuptools import Command
+except ImportError:
+    sys.stderr.write("setuptools.Command could not be imported: setuptools extensions not available\n")
+else:
+    sys.stderr.write("setuptools command extensions are available\n")
+    command_hook = "distutils.commands"
+    ENTRY_POINTS[command_hook] = []
+
 src_prefix = "pytbeaglehon/ccore"
 ext_source_files =[ "asrv.c",
                     "calc_instance.c",
@@ -135,11 +200,12 @@ ext_source_files =[ "asrv.c",
 ext_sources = [os.path.join(src_prefix, i) for i in ext_source_files]
 setup(name = "pytbeaglehon",
       version = "0.01",
-      packages = find_packages(),
+      packages=PACKAGES,
+      scripts = SCRIPTS,
+      entry_points = ENTRY_POINTS,
       maintainer = "Mark Holder",
       maintainer_email = "mtholder@gmail.com",
       description = "Calculations of likelihoods for phylogenetics using C extensions and the beaglelib library",
-      test_suite = "pytbeaglehon.tests",
       ext_modules = [
         Extension("pytbeaglehon.ccore.disc_state_cont_time_model",
             define_macros=preprocessor_defines,
@@ -163,7 +229,8 @@ setup(name = "pytbeaglehon",
             "Programming Language :: Python",
             "Topic :: Scientific/Engineering :: Bio-Informatics",
             ],
-    )
+      **EXTRA_KWARGS
+      )
 
 ################################################################################
 # cPhyProb is a package implementing some probability calculations used in

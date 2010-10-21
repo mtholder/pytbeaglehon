@@ -27,6 +27,7 @@ class DiscStateContTimeModel(object):
         self._total_state_hash = None
         self._last_asrv_rates_hash = None
         self._prev_state_hash = None
+        self._num_states = None # only used if _char_type is None
         param_list = kwargs.get('param_list')
         if param_list is not None:
             for p in param_list:
@@ -56,7 +57,7 @@ class DiscStateContTimeModel(object):
 
     def get_num_states(self):
         if self._char_type is None:
-            return None
+            return self._num_states
         return self._char_type.num_states
     num_states = property(get_num_states)
 
@@ -199,6 +200,7 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
             if r_mat:
                 raise ValueError("r_mat or r_upper cannot both be specified")
             r_mat = _r_upper_to_r_mat(r_upper) 
+            _LOG.debug('r_mat from r_upper (%s) is %s' % (str(r_upper), str(r_mat)))
         elif not r_mat:
             raise ValueError("Either r_mat or r_upper must be given")
 
@@ -229,6 +231,8 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
         param_set.update(set(self._state_freq.parameters()))
         DiscStateContTimeModel.__init__(self, param_list=param_set, **kwargs)
         if r_mat:
+            if self.num_states is None:
+               self._num_states = len(r_mat)
             self._verify_r_mat(r_mat)
         else:
             raise ValueError("Either r_mat or r_upper must be specified")

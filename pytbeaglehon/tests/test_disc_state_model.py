@@ -15,6 +15,17 @@ from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, R
 from pytbeaglehon.disc_state_cont_time_model import _r_upper_to_r_mat, _r_mat_to_r_upper
 
 class ModelTest(unittest.TestCase):
+    def test_gtr(self):
+        kappa = 6.122449
+        m = RevDiscStateContTimeModel(state_freq=(0.3, 0.25, 0.2, 0.25),
+                                      r_upper=[[1.0, kappa,   1.0 ],
+                                                    [  1.0, kappa ],
+                                                           [  1.0 ]]
+                                     )
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
+                                            [0.0014964, 0.989928, 0.0009976, 0.007576],
+                                            [0.009095, 0.001247, 0.988415, 0.001247],
+                                            [0.0014964, 0.007576, 0.0009976, 0.989928]]])
     def test_modhky(self):
         m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
         m.kappa.is_mutable = True

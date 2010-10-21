@@ -542,3 +542,12 @@ class LikeCalcEnvironment(object):
            
 def combine_state_id(*valist):
     return ' '.join([str(i) for i in valist])
+##############################################################################
+##  pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
+##
+##  Copyright 2010 Mark T. Holder
+##  All rights reserved.
+##
+##  See "LICENSE.txt" for terms and conditions of usage.
+##
+##############################################################################
