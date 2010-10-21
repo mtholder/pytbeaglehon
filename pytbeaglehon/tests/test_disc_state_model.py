@@ -13,6 +13,16 @@ from pytbeaglehon.parameter import MutableFloatParameter
 from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel, HKY85Model
 
 class ModelTest(unittest.TestCase):
+    def test_modhky(self):
+        m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
+        m.kappa.is_mutable = True
+        m.kappa = 6.122449
+        m.state_freq.is_mutable = True
+        m.state_freq = (0.3, 0.25, 0.2, 0.25)
+        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
+                                            [0.0014964, 0.989928, 0.0009976, 0.007576],
+                                            [0.009095, 0.001247, 0.988415, 0.001247],
+                                            [0.0014964, 0.007576, 0.0009976, 0.989928]]])
     def test_change_kappa(self):
         mp = MutableFloatParameter(2.0)
         m = Kimura2ParameterModel(mp)
@@ -34,7 +44,7 @@ class ModelTest(unittest.TestCase):
         assert_mat_eq(self, jc.q_mat, [[-1.0, 1.0/3, 1.0/3, 1.0/3], [1.0/3, -1.0, 1.0/3, 1.0/3], [1.0/3, 1.0/3, -1.0, 1.0/3], [ 1.0/3, 1.0/3, 1.0/3, -1.0]])
     def test_rev_init(self):
         b = DNAType()
-        a = RevDiscStateContTimeModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], char_type=b)
+        a = RevDiscStateContTimeModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],], state_freq=(.25, .25, .25, .25, ), char_type=b)
         self.assertEqual(a.char_type, b)
     def test_initk2p(self):
         m = Kimura2ParameterModel(2.0)
@@ -45,11 +55,11 @@ class ModelTest(unittest.TestCase):
         
     def test_inithky(self):
         m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
+        self.assertRaises(AttributeError, m.kappa.set_value, 3)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
         assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
-        
-class Skip:
 
+class Skip:
     def test_bad(self):
         self.assertRaises(ValueError, RevDiscreteModel, [])
         self.assertRaises(ValueError, RevDiscreteModel, [[0,1],[.5,0]])
@@ -80,19 +90,19 @@ class Skip:
     def test_set_q_mat(self):
         a = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],])
         oth = 1.0/3.0
-        assert_list_eq(self, a.state_freqs, [0.25]*4)
+        assert_list_eq(self, a.state_freq, [0.25]*4)
         assert_mat_eq(self, a.q_mat, [[-1.0, oth, oth, oth],
                                        [oth, -1.0, oth, oth],
                                        [oth, oth, -1.0, oth],
                                        [oth, oth, oth, -1.0]])
         a.r_upper = [[1.0, 2.0, 1.0], [1.0, 2.0], [1.0],] # kimura kappa=2
-        assert_list_eq(self, a.state_freqs, [0.25]*4)
+        assert_list_eq(self, a.state_freq, [0.25]*4)
         assert_mat_eq(self, a.q_mat, [[-1.0, .25, .5, .25],
                                       [.25, -1.0, .25, .5],
                                       [.5, .25, -1.0, .25],
                                       [.25, .5, .25, -1.0]])
-        a.state_freqs = [0.2, 0.3, 0.15, 0.35]
-        assert_list_eq(self, a.state_freqs, [0.2, 0.3, 0.15, 0.35])
+        a.state_freq = [0.2, 0.3, 0.15, 0.35]
+        assert_list_eq(self, a.state_freq, [0.2, 0.3, 0.15, 0.35])
         exp = [[-0.9547738, 0.301507, 0.3015075, 0.351758],
                [0.20100502, -1.05527638, 0.15075376, 0.7035175],
                [0.40201005, 0.301507537, -1.05527638, 0.35175879],

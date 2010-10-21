@@ -4,11 +4,17 @@ model.
 '''
 # Copyright (c) 2010 by Mark T. Holder,  University of Kansas
 # (see bottom of file)
-
+from itertools import izip
+from pytbeaglehon import get_logger
+_LOG = get_logger(__name__)
+_TOL = 1.0e-6
 class Parameter(object):
     def __init__(self, value, **kwargs):
         self._prev_value = None
-        self._value = self.native_type()(value)
+        if value is None:
+            self._value = None
+        else:
+            self._value = self.native_type()(value)
         self.listener_list = []
         self.name = kwargs.get('name')
         self.is_mutable = False
@@ -55,6 +61,7 @@ class Parameter(object):
             if notify:
                 try:
                     for listener in self.listener_list:
+                        _LOG.debug("%s notifying listener..." % str(self))
                         listener(self)
                 except Exception, x:
                     self._value = _prev_value
@@ -72,7 +79,7 @@ class Parameter(object):
     value = property(get_value, set_value)
     def __str__(self):
         i = self.name and (' named "%s"' % self.name) or ''
-        return 'Parameter(%s) at %d' % (str(self._value),i, id(self))
+        return 'Parameter(%s)%s at %d' % (str(self._value),i, id(self))
     def parameters(self):
         return [self]
 
@@ -115,6 +122,7 @@ class MutableFloatParameter(FloatParameter):
 
 class ProbabilityVectorParameter(Parameter):
     def __init__(self, elements, **kwargs):
+        self.forcing_sum_to_one = True
         self._vec_len = len(elements)
         if self._vec_len < 2:
             raise ValueError("A ProbabilityVectorParameter must be off length 2 or greater")
@@ -137,7 +145,7 @@ class ProbabilityVectorParameter(Parameter):
                 self._fixed_sub_p.add(np)
                 sub_p.append(np)
                 s += np.value
-        if abs(1.0 - s > 1.0e-6):
+        if abs(1.0 - s > _TOL):
             raise ValueError("Values in ProbabilityVectorParameter are expected to add to 1.0")
         if all_p and (len(self._fixed_sub_p) == (self._vec_len - 1)) :
             raise ValueError("Cannot have all but one parameter be fixed")
@@ -149,8 +157,18 @@ class ProbabilityVectorParameter(Parameter):
             el._parent_param = self
             el.index = n
         self.sub_parameters = sub_p
+        Parameter.__init__(self, value=None)
+        self._is_mutable = False
+
+    def parameters(self):
+        return list(self.sub_parameters)
+
+    def __getitem__(self, k):
+        return self.sub_parameters[k]
 
     def sub_parameter_changed(self, s):
+        if not self.forcing_sum_to_one:
+            return
         assert(s in self.sub_parameters)
         others = [i for i in self._free_parameters if i is not s]
         assert(len(others) > 0)
@@ -166,8 +184,27 @@ class ProbabilityVectorParameter(Parameter):
             
     def __iter__(self):
         return iter(self.sub_parameters)
-        
-
+    def __str__(self):
+        return 'ProbabilityVectorParameter([%s]) at %d' % (', '.join([str(i) for i in self.sub_parameters]), id(self))
+    def get_value(self):
+        return [i.value for i in self.sub_parameters]
+    def set_value(self, v):
+        if len(v) != len(self.sub_parameters):
+            raise ValueError("Expecting %d values for ProbabilityVectorParameter" % len(self.sub_parameter_changed))
+        x = sum([float(i) for i in v])
+        if abs(x - 1.0) > _TOL:
+            raise ValueError("Values in ProbabilityVectorParameter are expected to add to 1.0")
+        for p, vel in izip(self.sub_parameters, v):
+            p.set_value(vel, notify_parent=False)
+    value = property(get_value, set_value)
+    def get_is_mutable(self):
+        return self._is_mutable
+    def set_is_mutable(self, v):
+        b = bool(v)
+        self._is_mutable = b
+        for p in self.sub_parameters:
+            p.is_mutable = b
+    is_mutable = property(get_is_mutable, set_is_mutable)
 ##############################################################################
 ##  pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
 ##

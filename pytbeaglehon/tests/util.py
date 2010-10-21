@@ -13,7 +13,6 @@ def assert_list_of_mat_eq(self, returned, expected):
     
 def assert_mat_eq(self, returned, expected):
     "calls self.assertAlmostEqual for all elements of two matrices."
-    _LOG.debug("returned = %s\nexpected = %s" %(str(returned), str(expected)))
     for ret_row, exp_row in izip(returned, expected):
         assert_list_eq(self, ret_row, exp_row)
 

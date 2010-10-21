@@ -213,21 +213,21 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
                     priv_row[n] = MutableFloatParameter(cell)
                 
             priv_mat.append(tuple(priv_row))
-        if sf is not None:
+        if sf is None:
+            raise ValueError("State frequencies must be specified for a RevDiscStateContTimeModel")
+        if isinstance(sf, ProbabilityVectorParameter):
+            self._state_freq = sf
+        else:
             priv_sf = list(sf)
             for cell in sf:
                 try:
                     param_set.update(cell.parameters())
+                    priv_sf.append(cell)
                 except:
-                    priv_sf.append(MutableFloatParameter(cell))
-            self._state_freq = tuple(priv_sf)
-        else:
-            self._state_freq = None
-
+                    priv_sf.append(FloatParameter(cell))
+            self._state_freq = ProbabilityVectorParameter(priv_sf)
+        param_set.update(set(self._state_freq.parameters()))
         DiscStateContTimeModel.__init__(self, param_list=param_set, **kwargs)
-        if sf is None:
-            self._state_freq = tuple([1.0/self.num_states for i in xrange(self.num_states)])
-
         if r_mat:
             self._verify_r_mat(r_mat)
         else:
@@ -248,7 +248,16 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
     def get_state_freq(self):
         "Accessor for state frequencies."
         return self._state_freq
-    state_freq = property(get_state_freq)
+    def set_state_freq(self, v):
+        "Accessor for state frequencies."
+        _LOG.debug("In RevDiscStateContTimeModel.set_state_freq")
+        if isinstance(v, ProbabilityVectorParameter):
+            self.substitute_parameter_instance(self._state_freq, v)
+            self._state_freq = v
+        else:
+            self._state_freq.value = v
+    state_freq = property(get_state_freq, set_state_freq)
+
 
     q_mat = property(DiscStateContTimeModel.get_q_mat)
 
@@ -261,6 +270,7 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
             is rescaled such that each row sums to 0.0 and the weighted 
             average of the diagonal elements is -1.0 (with the weight being the
             associated equilibrium frequency)."""
+        assert(self._state_freq is not None)
         _LOG.debug("in self.calc_q_mat: _r_mat = %s _state_freq = %s" % (repr(self._r_mat), str(self._state_freq)))
         ns = self.num_states
         qr = [0.0] * ns
@@ -329,32 +339,19 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
     model_probs = property(get_model_probs)
     r_mat = property(get_r_mat)
     r_upper = property(get_r_upper)
-    state_freq = property(get_state_freq)
+    
+
+    def get_state_freq_value(self):
+        return self._state_freq.value
+    def set_state_freq_value(self, v):
+        self._state_freq.value = v
+    state_freq_value = property(get_state_freq_value, set_state_freq_value)
 
 
 
 
 # Specific models below here...
 from pytbeaglehon.disc_char_type import *
-class JukesCantorModel(RevDiscStateContTimeModel):
-    def __init__(self):
-        dna = DNAType()
-        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]], char_type=dna)
-    def __str__(self):
-        return 'JukesCantorModel at %d' % id(self)
-
-class Kimura2ParameterModel(RevDiscStateContTimeModel):
-    def __init__(self, kappa):
-        dna = DNAType()
-        if isinstance(kappa, Parameter):
-            if kappa.name is None:
-                kappa.name = 'kappa'
-        else:
-            kappa = FloatParameter(value=kappa, name='kappa')
-        RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], char_type=dna)
-    def __str__(self):
-        return 'Kimura2ParameterModel at %d' % id(self)
-
 class HKY85Model(RevDiscStateContTimeModel):
     def __init__(self, kappa, state_freq):
         dna = DNAType()
@@ -373,8 +370,49 @@ class HKY85Model(RevDiscStateContTimeModel):
         for s, p in izip(dna.states, state_freq):
             p.name = 'freq_' + s
         RevDiscStateContTimeModel.__init__(self, r_upper=[[1.0, kappa, 1.0], [1.0, kappa], [1.0]], state_freq=state_freq, char_type=dna)
+        self._kappa = kappa
+    def get_kappa(self):
+        return self._kappa
+    def set_kappa(self, v):
+        if isinstance(v, Parameter):
+            self.substitute_parameter_instance(self._kappa, v)
+            self._kappa = v
+        else:
+            self._kappa.value = v
+    kappa = property(get_kappa, set_kappa)
+    def get_kappa(self):
+        return self._kappa
+    def set_kappa(self, v):
+        if isinstance(v, Parameter):
+            self.substitute_parameter_instance(self._kappa, v)
+            self._kappa = v
+        else:
+            self._kappa.value = v
+    kappa = property(get_kappa, set_kappa)
+    def get_kappa_value(self):
+        return self._kappa.value
+    def set_kappa_value(self, v):
+        self._kappa.value = v
+    kappa_value = property(get_kappa_value, set_kappa_value)
     def __str__(self):
         return 'HKY85Model at %d' % id(self)
+class Kimura2ParameterModel(HKY85Model):
+    def __init__(self, kappa):
+        sf = ProbabilityVectorParameter([.25, .25, .25, .25, ], name='base-frequency vector')
+        HKY85Model.__init__(self, kappa=kappa, state_freq=sf)
+    def __str__(self):
+        return 'Kimura2ParameterModel at %d' % id(self)
+    state_freq = property(RevDiscStateContTimeModel.get_state_freq)
+    state_freq_value = property(RevDiscStateContTimeModel.get_state_freq_value)
+
+class JukesCantorModel(Kimura2ParameterModel):
+    def __init__(self):
+        Kimura2ParameterModel.__init__(self, kappa=1.0)
+    def __str__(self):
+        return 'JukesCantorModel at %d' % id(self)
+    kappa = property(HKY85Model.get_kappa)
+    kappa_value = property(HKY85Model.get_kappa_value)
+    
 
 def _r_upper_to_r_mat(r_upper):
     """Convert the upper triangle of a symmetric matrix to the full matrix with 
