@@ -63,7 +63,7 @@ class ModelTest(unittest.TestCase):
 
     def test_bad(self):
         self.assertRaises(TypeError, RevDiscStateContTimeModel, [])
-        self.assertRaises(ValueError, RevDiscStateContTimeModel, [[0,1],[.5,0]])
+        self.assertRaises(ValueError, RevDiscStateContTimeModel, rmat=[[0,1],[.5,0]])
 
     def test_r_upper_to_r_mat(self):
         cases = [([[1.0]],
