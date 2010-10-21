@@ -17,10 +17,15 @@ class Parameter(object):
             self._value = self.native_type()(value)
         self.listener_list = []
         self.name = kwargs.get('name')
-        self.is_mutable = False
+        self._is_mutable = False
         self._min_value = kwargs.get('min_value')
         self._max_value = kwargs.get('max_value')
         self._parent_param = kwargs.get('parent_param')
+    def get_is_mutable(self):
+        return self._is_mutable
+    def set_is_mutable(self, b):
+        self._is_mutable = b
+    is_mutable = property(get_is_mutable, set_is_mutable)
     def get_min_value(self):
         return self._min_value
     def set_min_value(self, x):
@@ -150,7 +155,7 @@ class ProbabilityVectorParameter(Parameter):
         if all_p and (len(self._fixed_sub_p) == (self._vec_len - 1)) :
             raise ValueError("Cannot have all but one parameter be fixed")
         if len(self._fixed_sub_p) < (self._vec_len - 1):
-            self.is_mutable = True
+            self._is_mutable = True
         for n, el in enumerate(sub_p):
             el.max_value = 1.0
             el.min_value = 0.0
@@ -158,7 +163,7 @@ class ProbabilityVectorParameter(Parameter):
             el.index = n
         self.sub_parameters = sub_p
         Parameter.__init__(self, value=None)
-        self._is_mutable = False
+        self._is_mutable = len(self._fixed_sub_p) < (self._vec_len - 1)
 
     def parameters(self):
         return list(self.sub_parameters)
