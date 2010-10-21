@@ -12,6 +12,8 @@ from pytbeaglehon.tests.util import *
 from pytbeaglehon.parameter import MutableFloatParameter
 from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, RevDiscStateContTimeModel, Kimura2ParameterModel, HKY85Model
 
+from pytbeaglehon.disc_state_cont_time_model import _r_upper_to_r_mat, _r_mat_to_r_upper
+
 class ModelTest(unittest.TestCase):
     def test_modhky(self):
         m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
@@ -59,13 +61,10 @@ class ModelTest(unittest.TestCase):
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
         assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
 
-class Skip:
     def test_bad(self):
-        self.assertRaises(ValueError, RevDiscreteModel, [])
-        self.assertRaises(ValueError, RevDiscreteModel, [[0,1],[.5,0]])
-    def test_init(self):
-        a = RevDiscreteModel([["0", 2.],[2.,"0"]])
-        assert_mat_eq(self, a.q_mat, [[-1.0, 1.0],[1.0,-1.0]])
+        self.assertRaises(TypeError, RevDiscStateContTimeModel, [])
+        self.assertRaises(ValueError, RevDiscStateContTimeModel, [[0,1],[.5,0]])
+
     def test_r_upper_to_r_mat(self):
         cases = [([[1.0]],
                   [[0.0, 1.0],
@@ -87,6 +86,7 @@ class Skip:
             r_up_gen = _r_mat_to_r_upper(rmat)
             assert_mat_eq(self, r_mat_gen, rmat)
             assert_mat_eq(self, r_up_gen, rup)
+class Skip:
     def test_set_q_mat(self):
         a = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],])
         oth = 1.0/3.0
