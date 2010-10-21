@@ -1,0 +1,7 @@
+include ez_setup.py
+include README.txt
+include LICENSE.txt
+include COPYRIGHT
+include clean.sh
+include doc/Makefile
+recursive-include doc/source *
