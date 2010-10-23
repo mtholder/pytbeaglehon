@@ -41,12 +41,15 @@ class LCETest(unittest.TestCase):
     def test_lazy_init(self):
         lc_env = LCE()
         self.assertFalse(lc_env._incarnated)
+
     def test_init(self):
         lc_env = self.get_inst()
         lc_env._do_beagle_init() # trigger initialization
         self.assertTrue(lc_env._incarnated)
+
     def test_num_resources(self):
         self.assertTrue(LCE.get_num_comp_resources() > 0)
+        
 # pylint: disable-msg=C0103
 def getTestSuite():
     """Alias to the additional_tests().  This is unittest-style.

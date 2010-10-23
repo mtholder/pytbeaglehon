@@ -117,12 +117,82 @@ PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_ro
 	return lp;
 }
 
+PyObject * tupleToUnsignedArrayMaxSize(PyObject *tuple_obj, int *arr, unsigned n, unsigned *actualLen) {
+	PyObject *item;
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	long lval;
+	if (pytuple_len > n) {
+	    PYTBEAGLEHON_DEBUG_PRINTF2("error in tupleToUnsignedArrayMaxSize max=%d, tuple= %d\n", n, pytuple_len);
+		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n; ++i) {
+		item = PyTuple_GetItem(tuple_obj, i);
+		if (item == 0L) {
+    		PyErr_SetString(PyExc_TypeError, "could not extract item from tuple");
+			return 0L;
+		}
+		Py_INCREF(item);
+		if (!PyInt_Check(item)) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "integer expected");
+			return 0L;
+		}
+		lval = PyInt_AsLong(item);
+		if (lval >= INT_MAX || lval < 0) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+	    	return 0L;
+		}
+		arr[i] = (int) lval;
+		Py_DECREF(item);
+	}
+	if (actualLen)
+	    *actualLen = pytuple_len;
+	return none();
+}
+
+PyObject * tupleToUnsignedArray(PyObject *tuple_obj, int *arr, unsigned n) {
+	PyObject *item;
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	long lval;
+	if (pytuple_len != n) {
+		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n; ++i) {
+		item = PyTuple_GetItem(tuple_obj, i);
+		if (item == 0L) {
+    		PyErr_SetString(PyExc_TypeError, "could not extract item from tuple");
+			return 0L;
+		}
+		Py_INCREF(item);
+		if (!PyInt_Check(item)) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "integer expected");
+			return 0L;
+		}
+		lval = PyInt_AsLong(item);
+		if (lval >= INT_MAX || lval < 0) {
+			Py_DECREF(item);
+    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+	    	return 0L;
+		}
+		arr[i] = (int) lval;
+		Py_DECREF(item);
+	}
+	return none();
+}
+
 PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen) {
 	PyObject *item;
 	unsigned pylist_len = (unsigned) PyList_Size(list_obj);
 	unsigned i;
 	long lval;
 	if (pylist_len > n) {
+	    PYTBEAGLEHON_DEBUG_PRINTF2("error in listToUnsignedArrayMaxSize max=%d, tuple= %d\n", n, pylist_len);
 		PyErr_SetString(PyExc_IndexError, "list index out of range");
 		return 0L;
 	}

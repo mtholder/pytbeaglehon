@@ -6,6 +6,7 @@
 #include "calc_instance.h"
 #include "py_calc_instance.h"
 #include "discrete_state_model.h"
+#include "internal_like_calc_env.h"
 
 
 PyObject* cPytBeagleHonFree(PyObject *self, PyObject *args) {
@@ -245,3 +246,31 @@ PyObject* pyGetModelList(PyObject *self, PyObject *args) {
     return toReturn;
 }
 
+PyObject* pySetStateCodeArray(PyObject *self, PyObject *args) {
+	long handle;
+	int stateCodeArrayIndex;
+	unsigned scArraySize;
+	unsigned numCopied;
+    PyObject * scTuple = 0L;
+    if (!PyArg_ParseTuple(args, "liO!", &handle, &stateCodeArrayIndex, &PyTuple_Type, &scTuple))
+        return 0L;
+    scArraySize = (unsigned) PyTuple_Size(scTuple);
+    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    if (LCI == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+    if (scArraySize != LCI->numPatterns) {
+        PyErr_SetString(PyExc_IndexError, "Length of state code array passed in exceeds capacity of the likelihood calculator instances");
+        return 0L;
+    }
+    if (!tupleToUnsignedArrayMaxSize(scTuple, LCI->stateCodeArrayScratch, LCI->numPatterns, &numCopied))
+        return 0L;
+    if (setStateCodeArray(handle, stateCodeArrayIndex, LCI->stateCodeArrayScratch) != 0) {
+        PyErr_SetString(PyExc_IndexError, "Error calling setStateCodeArray");
+        return 0L;
+    }
+    return none();
+
+
+}

@@ -3,7 +3,8 @@ from itertools import izip
 from pytbeaglehon.ccore.disc_state_cont_time_model import \
     cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, \
     cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
-    cdsctm_calc_eigens, cdsctm_calc_pr_mats, cdsctm_get_pr_mats
+    cdsctm_calc_eigens, cdsctm_calc_pr_mats, cdsctm_get_pr_mats, \
+    cdsctm_set_state_code
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
 _LOG = get_logger(__name__)
@@ -53,6 +54,41 @@ del _name_to_num
 
 
 
+def minimal_LCE(model_list, data):
+    '''Simple constructor for a LikeCalcEnvironment that infers:
+        data_type (num_states) and asrv from the models in model_list
+        num_leaves, num_state_code_arrays, num_partials for len(data)
+        num_patterns from len(data[0])
+        
+        Assumes that you will want a enough prob_matrix for every edge in a rooted,
+            binary tree to have a set of matrices for each model/rate-category 
+            combination.
+        Assumes that you want only one eigen solution per model.
+
+        Assumes that you want one rescaling array for every 6 edges (every 4 leaves)
+    '''
+    asrv_list = []
+    num_model_rate_cats = 0
+    num_leaves = len(data)
+    num_patterns = len(data[0])
+    num_models = len(model_list) #TODO more generic for mixtures!
+    for model in model_list:
+        a = model.asrv
+        if a is None:
+            num_model_rate_cats += 1
+        else:
+            num_model_rate_cats += a.num_categories
+        
+    LCE = LikeCalcEnvironment(model_list=model_list,
+                               num_patterns=num_patterns,
+                               num_leaves=num_leaves,
+                               num_state_code_arrays=num_leaves,
+                               num_partials=(num_leaves - 1)*num_model_rate_cats,
+                               num_prob_matrices=num_model_rate_cats,
+                               num_eigen_storage_structs=num_models,
+                               num_rescalings_multipliers= 1 + num_leaves//4)
+    for n, row in enumerate(data):
+        LCE.set_state_code_array(n, row)
 
 class LikeCalcEnvironment(object):
     def get_num_comp_resources():
@@ -539,7 +575,14 @@ class LikeCalcEnvironment(object):
                     raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
         _LOG.debug("Calling cdsctm_get_pr_mats(%d, %s)" % (self._handle, str(index_list)))
         return cdsctm_get_pr_mats(self._handle, index_list)
-           
+
+    def set_state_code_array(self, leaf_index, leaf_data):
+        if not self._incarnated:
+            self._do_beagle_init()
+        if not isinstance(leaf_data, tuple):
+            leaf_data = tuple(leaf_data)
+        _LOG.debug("Calling cdsctm_set_state_code(%s, leaf_index=%s, leaf_data=%s,..))" % (str(self._handle), str(leaf_index), str(leaf_data)))
+        cdsctm_set_state_code(self._handle, leaf_index, leaf_data)
 def combine_state_id(*valist):
     return ' '.join([str(i) for i in valist])
 ##############################################################################

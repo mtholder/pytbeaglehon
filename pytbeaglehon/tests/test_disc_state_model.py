@@ -97,28 +97,6 @@ class ModelTest(unittest.TestCase):
             r_up_gen = _r_mat_to_r_upper(rmat)
             assert_mat_eq(self, r_mat_gen, rmat)
             assert_mat_eq(self, r_up_gen, rup)
-class Skip:
-    def test_set_q_mat(self):
-        a = RevDiscreteModel(r_upper=[[1.0, 1.0, 1.0], [1.0, 1.0], [1.0],])
-        oth = 1.0/3.0
-        assert_list_eq(self, a.state_freq, [0.25]*4)
-        assert_mat_eq(self, a.q_mat, [[-1.0, oth, oth, oth],
-                                       [oth, -1.0, oth, oth],
-                                       [oth, oth, -1.0, oth],
-                                       [oth, oth, oth, -1.0]])
-        a.r_upper = [[1.0, 2.0, 1.0], [1.0, 2.0], [1.0],] # kimura kappa=2
-        assert_list_eq(self, a.state_freq, [0.25]*4)
-        assert_mat_eq(self, a.q_mat, [[-1.0, .25, .5, .25],
-                                      [.25, -1.0, .25, .5],
-                                      [.5, .25, -1.0, .25],
-                                      [.25, .5, .25, -1.0]])
-        a.state_freq = [0.2, 0.3, 0.15, 0.35]
-        assert_list_eq(self, a.state_freq, [0.2, 0.3, 0.15, 0.35])
-        exp = [[-0.9547738, 0.301507, 0.3015075, 0.351758],
-               [0.20100502, -1.05527638, 0.15075376, 0.7035175],
-               [0.40201005, 0.301507537, -1.05527638, 0.35175879],
-               [0.2010050, 0.603015075, 0.150753768, -0.954773869]]
-        assert_mat_eq(self, a.q_mat, exp)
 
 
 def additional_tests():

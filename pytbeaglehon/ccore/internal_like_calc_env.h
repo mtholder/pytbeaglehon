@@ -46,6 +46,7 @@ struct LikeCalculatorInstance {
     double * edgeLenScratch; /* length numProbMats*/
     int * probMatIndexScratch; /* length numProbMats */
     double ** probMatScratch; /* numStates x numStates */
+    int * stateCodeArrayScratch; /* */
     
 };
 

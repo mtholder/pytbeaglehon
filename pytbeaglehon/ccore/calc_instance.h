@@ -89,6 +89,7 @@ int setPatternWeights(long likeCalcHandle, const double * patternWeights);
 int calcPrMats(long handle, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
 int fetchPrMat(long handle, int probMatIndex, double * flattenedMat);
 
+int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_codes);
 
 
 

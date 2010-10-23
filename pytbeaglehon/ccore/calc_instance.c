@@ -111,6 +111,7 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
     inst->edgeLenScratch = 0L; 
     inst->probMatIndexScratch = 0L; 
     inst->probMatScratch = 0L;
+    inst->stateCodeArrayScratch = 0L;
 
 }
 
@@ -198,6 +199,11 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     t->probMatScratch = allocateDblMatrix(t->numStates, t->numStates);
 	if (t->probMatScratch == 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probMatScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+    t->stateCodeArrayScratch = (int *)malloc(t->numPatterns*sizeof(int));
+	if (t->stateCodeArrayScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc stateCodeArrayScratch in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
 
@@ -366,6 +372,8 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	inst->edgeLenScratch = 0L;
 	freeDblMatrix(inst->probMatScratch);
 	inst->probMatScratch = 0L;
+	free(inst->stateCodeArrayScratch);
+	inst->stateCodeArrayScratch = 0L;
 }
 
 
@@ -458,6 +466,20 @@ int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
     
     return rc;
 }
+
+int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCodes) {
+    struct LikeCalculatorInstance * lci;
+    int rc;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || stateCodeArrayIndex >= lci->numStateCodeArrays) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    rc = beagleSetTipStates(lci->beagleInstanceIndex,
+                                 stateCodeArrayIndex,
+                                 stateCodes);
+    return rc;
+}
+
 
 /**
   pytbeaglehon phylogenetic likelihood caluclations using beaglelib.

@@ -18,6 +18,7 @@
 #include "asrv.h"
 #include "py_calc_instance.h"
 #include "py_discrete_state_model.h"
+#include "internal_like_calc_env.h"
 
 
 /* exception class (will be assigned in initdsct_model) */
@@ -124,6 +125,8 @@ static PyMethodDef dsct_model_module_functions[] = {
 	{"cdsctm_get_pr_mats", cdsctm_get_pr_mats, METH_VARARGS,
 		"Returns the stored transition probability matrices. Takes instance_handle, prmat_index_list"},
 
+	{"cdsctm_set_state_code", pySetStateCodeArray, METH_VARARGS,
+		"Sets data arrays for a tip.  Takes instance handle, state code array index, tuple of state codes"},
     
     
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,

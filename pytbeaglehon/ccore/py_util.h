@@ -39,6 +39,8 @@ int pyIndToCInd(int py_ind, unsigned dim);
 PyObject * doubleArrayToList(const double *arr, unsigned len);
 PyObject * doubleMatToList(const double **arr, unsigned n_rows, unsigned n_cols);
 PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_rows, unsigned n_cols);
+PyObject * tupleToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen);
+PyObject * tupleToUnsignedArray(PyObject *list_obj, int *arr, unsigned n);
 PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen);
 PyObject * listToUnsignedArray(PyObject *list_obj, int *arr, unsigned n);
 PyObject * listToDoubleArrayMaxSize(PyObject *list_obj, double *arr, unsigned maxLen, unsigned *actualLen);
