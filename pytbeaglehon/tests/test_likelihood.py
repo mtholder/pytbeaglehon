@@ -36,6 +36,10 @@ class ModelTest(unittest.TestCase):
         t3_4_data = tuple([0, 1, 2, 3] * 4)
         data = (t1_2_data, t1_2_data, t3_4_data, t3_4_data)
         LCE = minimal_LCE(model_list=[m], data=data)
+        tree = TreeForTesting(newick='((1:0.0, 2:0.0):0.0,(3:0.0,4:0.0):0.01)')
+        scorer = LCE.tree_scorer(tree)
+        lnL = scorer()
+        self.assertAlmostEqual(lnL, -95.53419)
 def additional_tests():
     "returns all tests in this file as suite"
     return unittest.TestLoader().loadTestsFromTestCase(ModelTest)

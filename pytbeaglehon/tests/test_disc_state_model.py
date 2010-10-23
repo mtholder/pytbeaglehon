@@ -22,7 +22,7 @@ class ModelTest(unittest.TestCase):
                                                     [  1.0, kappa ],
                                                            [  1.0 ]]
                                      )
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
+        assert_list_of_mat_eq(self, m.prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
                                             [0.0014964, 0.989928, 0.0009976, 0.007576],
                                             [0.009095, 0.001247, 0.988415, 0.001247],
                                             [0.0014964, 0.007576, 0.0009976, 0.989928]]])
@@ -32,7 +32,7 @@ class ModelTest(unittest.TestCase):
         m.kappa = 6.122449
         m.state_freq.is_mutable = True
         m.state_freq = (0.3, 0.25, 0.2, 0.25)
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
+        assert_list_of_mat_eq(self, m.prob_matrices(0.01), [[[0.991443333333, 0.001247, 0.00606333333333, 0.001247, ],
                                             [0.0014964, 0.989928, 0.0009976, 0.007576],
                                             [0.009095, 0.001247, 0.988415, 0.001247],
                                             [0.0014964, 0.007576, 0.0009976, 0.989928]]])
@@ -40,17 +40,17 @@ class ModelTest(unittest.TestCase):
         mp = MutableFloatParameter(2.0)
         m = Kimura2ParameterModel(mp)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
         mp.value = 1.0
         nc, ti, tv = 0.951630238774, 0.0161232537421, 0.0161232537421
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
     def test_jc_probs(self):
         jc = JukesCantorModel()
         nc, c = 0.99006637135539677, 0.0033112095482010773
-        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.01), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
+        assert_list_of_mat_eq(self, jc.prob_matrices(0.01), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
         nc, c = 1.0, 0.0
-        assert_list_of_mat_eq(self, jc.calc_prob_matrices(0.0), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
+        assert_list_of_mat_eq(self, jc.prob_matrices(0.0), [[[nc, c, c, c], [c, nc, c, c], [c, c, nc, c], [c, c, c, nc]]])
     def test_jc_q_mat(self):
         jc = JukesCantorModel()
         _LOG.debug("jc.q_mat = %s" % str(jc.q_mat))
@@ -62,7 +62,7 @@ class ModelTest(unittest.TestCase):
     def test_initk2p(self):
         m = Kimura2ParameterModel(2.0)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
         self.assertRaises(TypeError, Kimura2ParameterModel)
         self.assertRaises(ValueError, Kimura2ParameterModel, 'hi there')
         
@@ -70,7 +70,7 @@ class ModelTest(unittest.TestCase):
         m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
         self.assertRaises(AttributeError, m.kappa.set_value, 3)
         nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
-        assert_list_of_mat_eq(self, m.calc_prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
 
     def test_bad(self):
         self.assertRaises(TypeError, RevDiscStateContTimeModel, [])

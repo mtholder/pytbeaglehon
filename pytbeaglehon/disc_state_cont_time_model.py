@@ -35,8 +35,14 @@ class DiscStateContTimeModel(object):
                 p.add_listener(self.param_changed)
         self._changed_params.add(None) # having a non-empty set assures that the q_mat will be recognized as dirty
     
+    
+    def prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
+        pmi = self.calc_prob_matrices(edge_len, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
+        return self._fetch_prob_matrices(pmi)
+        
     def __str__(self):
         return 'DiscStateContTimeModel for %s with asrv=%s at %d' % (str(self.char_type), str(self.asrv), id(self))
+
     def calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
         '''Returns a list containing a transition probability matrix for each rate category.'''
         self._incarnate()
@@ -115,6 +121,9 @@ class DiscStateContTimeModel(object):
         return (in_prob_mat_caching,)
 
     def _calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
+        """Returns and an index and state list object which records where the probability matrices
+        are stored in the LikeCalcEnvironment.
+        """
         state_id = self.state_hash()
         esi = self._calc_env.calc_eigen_soln(model=self, 
                                              state_id=state_id,
@@ -125,8 +134,18 @@ class DiscStateContTimeModel(object):
                                          eigen_soln_index=esi,
                                          eigen_state_id=state_id,
                                          prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))
-        self._prob_mat_indices = pmi
-        return self._calc_env.get_prob_matrices(index_and_state_list=self._prob_mat_indices)
+        return pmi
+    def get_eigen_soln_index(self, eigen_soln_caching=None):
+        state_id = self.state_hash()
+        esi = self._calc_env.calc_eigen_soln(model=self, 
+                                             state_id=state_id,
+                                             eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
+        self._eigen_soln_index = esi
+        return self._eigen_soln_index
+    eigen_soln_index = property(get_eigen_soln_index)
+        
+    def _fetch_prob_matrices(self, index_and_state_list):
+        return self._calc_env.get_prob_matrices(index_and_state_list=index_and_state_list)
 
 
     def _incarnate(self):
