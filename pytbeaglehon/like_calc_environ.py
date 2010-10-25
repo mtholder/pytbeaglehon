@@ -92,6 +92,140 @@ def minimal_LCE(model_list, data):
         LCE.set_state_code_array(n, row)
     return LCE
 
+class BufferWrapper(object):
+    '''Base class for Python objects that wrap a beagle buffer.  Holds a
+    reference to the LikeCalcEnvironment and the index of the struct within
+    that context.
+    '''
+    def __init__(self, index, like_calc_env):
+        self.index = index
+        self.like_calc_env = like_calc_env
+
+class EigenSolutionWrapper(BufferWrapper):
+    def __init__(self, index, like_calc_env):
+        BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self._model = None 
+        self._model_hash = None
+        self.hash_format = 'ES-%d-%d(%%s)' % (id(self), index)
+        self._state_hash = None
+
+    def get_state_hash(self):
+        if self._state_hash is None:
+            if self._model_hash is None:
+                raise ValueError('EigenSolutionWrapper with empty model is not hashable')
+            self._state_hash = self.hash_format % self._model_hash
+        return self._state_hash
+    state_hash = property(get_state_hash)
+        
+class ProbMatWrapper(BufferWrapper):
+    def __init__(self, index, like_calc_env):
+        BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self._eigen_solution = None
+        self._eigen_solution_hash = None
+        self._asrv = None
+        self._asrv_hash = None
+        self._asrv_categ = None
+        self._edge_length = None
+        self._edge_length_hash = None
+        self.hash_format = 'PM-%d-%d(%%s-%%s-%%d-%%s)' % (id(self), index)
+        self._state_hash = None
+
+    def get_state_hash(self):
+        if self._state_hash is None:
+            if self._eigen_solution_hash is None:
+                raise ValueError('ProbMatWrapper without an eigen solution is not hashable')
+            if self._asrv_hash is None:
+                raise ValueError('ProbMatWrapper without an asrv object is not hashable')
+            if self._asrv_categ is None:
+                raise ValueError('ProbMatWrapper without an asrv category is not hashable')
+            if self._edge_length_hash is None:
+                raise ValueError('ProbMatWrapper without an edge_length is not hashable')
+            self._state_hash = self.hash_format % (self._eigen_solution_hash,
+                                                   self._asrv_hash,
+                                                   self._asrv_categ,
+                                                   self._edge_length_hash)
+        return self._state_hash
+    state_hash = property(get_state_hash)
+class PartialLikeWrapper(BufferWrapper):
+    def __init__(self, index, like_calc_env):
+        BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self._left_data_hash = None
+        self._left_prmat = None
+        self._left_prmat_hash = None
+        self._right_data_hash = None
+        self._right_prmat = None
+        self._right_prmat_hash = None
+        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
+        self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
+        self.brief_state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
+        self._brief_state_hash = None
+        self.hash_format = 'PL-%d-%d-%%d(%%s-%%s+%%s-%%s)' % (id(self), index)
+        self._state_hash = None
+    def get_state_hash(self):
+        if self._state_hash is None:
+            if self.revision_index is None:
+                raise ValueError('ProbMatWrapper that has not been calculated is not hashable')
+            if self._left_data_hash is None:
+                raise ValueError('ProbMatWrapper without an left child data is not hashable')
+            if self._left_prmat_hash is None:
+                raise ValueError('ProbMatWrapper without an left child probability matrix is not hashable')
+            if self._right_data_hash is None:
+                raise ValueError('ProbMatWrapper without an right child data is not hashable')
+            if self._right_prmat_hash is None:
+                raise ValueError('ProbMatWrapper without an right child probability matrix is not hashable')
+            self._state_hash = self.hash_format % (self.revision_index,
+                                                   self._left_data_hash,
+                                                   self._left_prmat_hash,
+                                                   self._right_data_hash,
+                                                   self._right_prmat_hash)
+        return self._state_hash
+    state_hash = property(get_state_hash)
+    def get_brief_state_hash(self):
+        if self._brief_state_hash is None:
+            if self.revision_index is None:
+                raise ValueError('ProbMatWrapper that has not been calculated is not hashable')
+            self._brief_state_hash = self.brief_state_hash_format % (self.revision_index)
+        return self._brief_state_hash
+    brief_state_hash = property(get_brief_state_hash)
+
+
+class StateCodeArrayWrapper(BufferWrapper):
+    def __init__(self, index, like_calc_env):
+        BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self.brief_state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
+        self._leaf_index = index
+        self._brief_state_hash = None
+        self.brief_state_hash_format = 'SC-%d-%d-%%d-%%d' % (id(self), index)
+        self._brief_state_hash = None
+        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
+        self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
+    def get_brief_state_hash(self):
+        if self._brief_state_hash is None:
+            if self.revision_index is None:
+                raise ValueError('StateCodeArrayWrapper that has not been set is not hashable')
+            self._brief_state_hash = self.brief_state_hash_format % (self._leaf_index, self.revision_index)
+        return self._brief_state_hash
+    brief_state_hash = property(get_brief_state_hash)
+    state_hash = property(get_brief_state_hash)
+
+
+class RescalingMultiplier(BufferWrapper):
+    def __init__(self, index, like_calc_env):
+        BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self.hash_format = 'RM-%d-%d(%%s)' % (id(self), index)
+        self._state_hash = None
+        self._partial_wrapper = None
+        self._partial_wrapper_brief_hash = None
+    def get_state_hash(self):
+        if self._state_hash is None:
+            if self.partial_wrapper_brief_hash is None:
+                raise ValueError('RescalingMultiplier that has not been calculated is not hashable')
+            self._state_hash = self.hash_format % (self._partial_wrapper_brief_hash)
+        return self._state_hash
+    state_hash = property(get_state_hash)
+
+
+
 class LikeCalcEnvironment(object):
     _CALC_ACTION = 0
     _FREE_ACTION = 1
@@ -424,6 +558,12 @@ class LikeCalcEnvironment(object):
         
         self._incarnated = True
         
+        self._wrap_eigen_soln_structs = [EigenSolutionWrapper(index=n, like_calc_env=self) for n in range(self.num_eigen_storage_structs)]
+        self._wrap_prob_mat = [ProbMatWrapper(index=n, like_calc_env=self) for n in range(self.num_prob_matrices)]
+        self._wrap_partial = [PartialLikeWrapper(index=n, like_calc_env=self) for n in range(self.num_partials)]
+        self._wrap_state_code_array = [StateCodeArrayWrapper(index=n, like_calc_env=self) for n in range(self.num_state_code_arrays)]
+        self._wrap_rescalers = [RescalingMultiplier(index=n, like_calc_env=self) for n in range(self.num_rescalings_multipliers)]
+        
         # caching is implemented by keeping a free, saved and calculated pool.
         #   if a new slot is needed, the free pool will be used, if it is empty
         #   then the calculated pool will be used. If that is also empty, then 
@@ -676,9 +816,12 @@ class LikeCalcEnvironment(object):
                 self._free_cached_partial(right_child._LCE_buffer_index)
                 right_child._LCE_buffer_index = None
             
-
+    def _prob_mat_cache(self, model, node):
+        assert(False)
+        
+        
     def _add_child_partial_calc(self, model, destination_node, child):
-        pmi_state = self._prob_mat_cache(child)
+        pmi_state = self._prob_mat_cache(model, child)
         if pmi_state is None:
             if 1 + self._num_queued_prob_mats > self._num_prob_mats_avail_for_current:
                 self._force_calc_queued_partials(model)
@@ -712,8 +855,8 @@ class LikeCalcEnvironment(object):
     def _add_binary_internal_node_to_partial_calc(self, model, destination_node, left_child, right_child):
         partial_cach = self._partial_cached(destination_node, left_child._LCE_edge_state_cache, right_child._LCE_edge_state_cache)
         if partial_cach is None:
-            left_pmi = _add_child_partial_calc(model, destination_node, left_child)
-            right_pmi = _add_child_partial_calc(model, destination_node, right_child)
+            left_pmi = self._add_child_partial_calc(model, destination_node, left_child)
+            right_pmi = self._add_child_partial_calc(model, destination_node, right_child)
             if 1 + self._num_queued_partials > self._num_partials_avail_for_current:
                 self._force_calc_queued_partials(model)
             self._num_queued_partials += 1
