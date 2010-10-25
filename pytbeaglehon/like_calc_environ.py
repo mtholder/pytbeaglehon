@@ -92,6 +92,8 @@ def minimal_LCE(model_list, data):
         LCE.set_state_code_array(n, row)
     return LCE
 
+_NONE_HASH = '<None>'
+
 class BufferWrapper(object):
     '''Base class for Python objects that wrap a beagle buffer.  Holds a
     reference to the LikeCalcEnvironment and the index of the struct within
@@ -100,26 +102,74 @@ class BufferWrapper(object):
     def __init__(self, index, like_calc_env):
         self.index = index
         self.like_calc_env = like_calc_env
+        self._is_calculated = False
+    def set_calculated(self):
+        self._is_calculated = True
+    def get_is_calculated(self):
+        return self._is_calculated
+    def clear(self):
+        self._is_calculated = False
+    is_calculated = property(get_is_calculated)
 
 class EigenSolutionWrapper(BufferWrapper):
+
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self._instance_hash_format = 'ES-%d-%d(%%s)' % (id(self), index)
+        self.clear()
+    def clear(self):
+        self._is_calculated = False
         self._model = None 
         self._model_hash = None
-        self.hash_format = 'ES-%d-%d(%%s)' % (id(self), index)
         self._state_hash = None
+        self._instance_hash = None
+
+    def calc_hash(model_state_hash):
+        return '%s' % model_state_hash
+    calc_hash = staticmethod(calc_hash)
 
     def get_state_hash(self):
         if self._state_hash is None:
             if self._model_hash is None:
                 raise ValueError('EigenSolutionWrapper with empty model is not hashable')
-            self._state_hash = self.hash_format % self._model_hash
+            self._state_hash = EigenSolutionWrapper.calc_hash(self._model_hash)
         return self._state_hash
     state_hash = property(get_state_hash)
-        
+
+    def get_instance_hash(self):
+        if self._instance_hash is None:
+            if self._model_hash is None:
+                raise ValueError('EigenSolutionWrapper with empty model is not hashable')
+            self._instance_hash = self._instance_hash_format % self._model_hash
+        return self._state_hash
+    instance_hash = property(get_instance_hash)
+  
+    def calculate(self, model, model_state_hash=None):
+        cdsctm_set_q_mat(model.cmodel, model.q_mat)
+        _LOG.debug("Calling cdsctm_calc_eigens(%d, %d)" % (id(model), self.index))
+        cdsctm_calc_eigens(model.cmodel, self.index)
+        self._state_hash = None
+        self._model = model
+        if model_state_hash is None:
+            self._model_hash = model.state_hash
+        else:
+            assert(model.state_hash == model_state_hash) # doublechecking
+            self._model_hash = model_state_hash
+
 class ProbMatWrapper(BufferWrapper):
+    _hash_format = '%s-%s-%d-%s'
+    def calc_hash(eigen_state_hash, asrv_hash, asrv_categ, edge_len_hash):
+        return ProbMatWrapper._hash_format % (eigen_state_hash, 
+                                              asrv_hash,
+                                              asrv_categ,
+                                              edge_len_hash)
+    calc_hash = staticmethod(calc_hash)
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self._instance_hash_format = ('PM-%d-%d' % (id(self), index)) + ProbMatWrapper._hash_format
+        self.clear()
+    def clear(self):
+        self._is_calculated = False
         self._eigen_solution = None
         self._eigen_solution_hash = None
         self._asrv = None
@@ -127,9 +177,9 @@ class ProbMatWrapper(BufferWrapper):
         self._asrv_categ = None
         self._edge_length = None
         self._edge_length_hash = None
-        self.hash_format = 'PM-%d-%d(%%s-%%s-%%d-%%s)' % (id(self), index)
         self._state_hash = None
-
+        self._instance_hash = None
+    
     def get_state_hash(self):
         if self._state_hash is None:
             if self._eigen_solution_hash is None:
@@ -140,29 +190,80 @@ class ProbMatWrapper(BufferWrapper):
                 raise ValueError('ProbMatWrapper without an asrv category is not hashable')
             if self._edge_length_hash is None:
                 raise ValueError('ProbMatWrapper without an edge_length is not hashable')
-            self._state_hash = self.hash_format % (self._eigen_solution_hash,
+            self._state_hash = ProbMatWrapper._hash_format % (self._eigen_solution_hash,
                                                    self._asrv_hash,
                                                    self._asrv_categ,
                                                    self._edge_length_hash)
         return self._state_hash
     state_hash = property(get_state_hash)
+
+    def get_instance_hash(self):
+        if self._instance_hash is None:
+            if self._eigen_solution_hash is None:
+                raise ValueError('ProbMatWrapper without an eigen solution is not hashable')
+            if self._asrv_hash is None:
+                raise ValueError('ProbMatWrapper without an asrv object is not hashable')
+            if self._asrv_categ is None:
+                raise ValueError('ProbMatWrapper without an asrv category is not hashable')
+            if self._edge_length_hash is None:
+                raise ValueError('ProbMatWrapper without an edge_length is not hashable')
+            self._instance_hash = self._instance_hash_format % (self._eigen_solution_hash,
+                                                   self._asrv_hash,
+                                                   self._asrv_categ,
+                                                   self._edge_length_hash)
+        return self._instance_hash
+    instance_hash = property(get_instance_hash)
+    def calculate_list(pr_wrap_list, eigen_soln, asrv, eff_edge_len_list, eigen_hash=None, asrv_hash=None, eff_edge_len_hash=None):
+        lce = pr_wrap_list[0].like_calc_env
+        ind_list = []
+        for p in pr_wrap_list:
+            assert(p.like_calc_env is lce)
+            ind_list.append(p.index)
+
+        _LOG.debug("Calling cdsctm_calc_pr_mats(%d, %d, %s, %s)" % (lce._handle, eigen_soln.index, str(eff_edge_len_list), str(ind_list)))
+        cdsctm_calc_pr_mats(lce._handle, eigen_soln.index, eff_edge_len_list, ind_list)
+        
+        for n, p in enumerate(pr_wrap_list):
+            p._eigen_solution = eigen_soln
+            p._eigen_solution_hash = eigen_hash
+            p._asrv = asrv
+            p._asrv_hash = asrv_hash
+            p._asrv_categ = n
+            p._edge_length = eff_edge_len_list[n]
+            p._edge_length_hash = eff_edge_len_hash[n]
+            p._state_hash = None
+            p._instance_hash = None
+        return pr_wrap_list
+    calculate_list = staticmethod(calculate_list)
+
+
 class PartialLikeWrapper(BufferWrapper):
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
+        self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
+        self._state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
+        self.full_hash_format = 'PL-%d-%d-%%d(%%s-%%s+%%s-%%s)' % (id(self), index)
+        self.clear()
+
+    def clear(self):
+        self._is_calculated = False
         self._left_data_hash = None
         self._left_prmat = None
         self._left_prmat_hash = None
         self._right_data_hash = None
         self._right_prmat = None
         self._right_prmat_hash = None
-        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
-        self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
-        self.brief_state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
-        self._brief_state_hash = None
-        self.hash_format = 'PL-%d-%d-%%d(%%s-%%s+%%s-%%s)' % (id(self), index)
         self._state_hash = None
-    def get_state_hash(self):
-        if self._state_hash is None:
+        self._full_state_hash = None
+        self.revision_index = None
+
+    def set_calculated(self):
+        self.revision_index = self.next_revision_index
+        self.next_revision_index += 1
+        
+    def get_full_state_hash(self):
+        if self._full_state_hash is None:
             if self.revision_index is None:
                 raise ValueError('ProbMatWrapper that has not been calculated is not hashable')
             if self._left_data_hash is None:
@@ -173,58 +274,143 @@ class PartialLikeWrapper(BufferWrapper):
                 raise ValueError('ProbMatWrapper without an right child data is not hashable')
             if self._right_prmat_hash is None:
                 raise ValueError('ProbMatWrapper without an right child probability matrix is not hashable')
-            self._state_hash = self.hash_format % (self.revision_index,
+            self._full_state_hash = self.full_hash_format % (self.revision_index,
                                                    self._left_data_hash,
                                                    self._left_prmat_hash,
                                                    self._right_data_hash,
                                                    self._right_prmat_hash)
-        return self._state_hash
-    state_hash = property(get_state_hash)
-    def get_brief_state_hash(self):
-        if self._brief_state_hash is None:
+        return self._full_state_hash
+    full_state_hash = property(get_full_state_hash)
+    def get_state_hash(self):
+        if self._state_hash is None:
             if self.revision_index is None:
                 raise ValueError('ProbMatWrapper that has not been calculated is not hashable')
-            self._brief_state_hash = self.brief_state_hash_format % (self.revision_index)
-        return self._brief_state_hash
-    brief_state_hash = property(get_brief_state_hash)
-
+            self._state_hash = self._state_hash_format % (self.revision_index)
+        return self._state_hash
+    state_hash = property(get_state_hash)
+ 
 
 class StateCodeArrayWrapper(BufferWrapper):
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
-        self.brief_state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
         self._leaf_index = index
-        self._brief_state_hash = None
-        self.brief_state_hash_format = 'SC-%d-%d-%%d-%%d' % (id(self), index)
-        self._brief_state_hash = None
-        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
+        self._state_hash_format = 'SC-%d-%d-%%d-%%d' % (id(self), index)
         self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
-    def get_brief_state_hash(self):
-        if self._brief_state_hash is None:
+        self.clear()
+
+    def clear(self):
+        self._is_calculated = False
+        self._state_hash = None
+        self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
+
+    def set_calculated(self):
+        self.revision_index = self.next_revision_index
+        self.next_revision_index += 1
+
+    def get_state_hash(self):
+        if self._state_hash is None:
             if self.revision_index is None:
                 raise ValueError('StateCodeArrayWrapper that has not been set is not hashable')
-            self._brief_state_hash = self.brief_state_hash_format % (self._leaf_index, self.revision_index)
-        return self._brief_state_hash
-    brief_state_hash = property(get_brief_state_hash)
-    state_hash = property(get_brief_state_hash)
+            self._state_hash = self._state_hash_format % (self._leaf_index, self.revision_index)
+        return self._state_hash
+    state_hash = property(get_state_hash)
+    full_state_hash = property(get_state_hash)
 
 
 class RescalingMultiplier(BufferWrapper):
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
         self.hash_format = 'RM-%d-%d(%%s)' % (id(self), index)
+        self.clear()
+
+    def clear(self):
+        self._is_calculated = False
         self._state_hash = None
         self._partial_wrapper = None
-        self._partial_wrapper_brief_hash = None
+        self._partial_wrapper_hash = None
+
     def get_state_hash(self):
         if self._state_hash is None:
-            if self.partial_wrapper_brief_hash is None:
+            if self._partial_wrapper_hash is None:
                 raise ValueError('RescalingMultiplier that has not been calculated is not hashable')
-            self._state_hash = self.hash_format % (self._partial_wrapper_brief_hash)
+            self._state_hash = self.hash_format % (self._partial_wrapper_hash)
         return self._state_hash
     state_hash = property(get_state_hash)
 
+class CalculatedCache(object):
+    
+    def __init__(self, wrappers, obj_name):
+        self.obj_name = obj_name
+        self._free = set(wrappers)
+        self._saved = {}
+        self._calculated = set()
+        self._state_to_wrapper = {}
+        self._queued = set()
+    def get_from_cache(self, state_hash):
+        return self._state_to_wrapper.get(state_hash)
+    def save_obj(self, o):
+        '''increments the reference count on o'''
+        self._queued.discard(o)
+        o.set_calculated()
+        n = self._saved.setdefault(o, 0)
+        self._saved[o] = (n + 1)
 
+    def get_writable_object(self):
+        '''Returns a free object, and "tells" the wrapper to clear itself.
+        
+        Following this call, the caller must call exactly one of the following:
+            - `flag_as_calculated` (to signal the calculation was successful, but
+                the object does not need to be stored long term).
+            - `save_obj` to save the object, or
+            - `release` to return the object (as uncalculated) to the free pool
+        '''
+        try:
+            o = self._free.pop()
+        except KeyError:
+            try:
+                o = self._calculated.pop()
+            except KeyError:
+                raise ValueError("All %s instances are locked" % self.obj_name)
+        o.clear()
+        self._queued.add(o)
+        return o
+
+    def flag_as_calculated(self, o):
+        assert(o in self._queued)
+        assert(o not in self._saved)
+        o.set_calculated()
+        self._queued.discard(o)
+        self._calculated.add(o)
+
+    def save_obj(self, o):
+        assert(o in self._queued)
+        assert(o not in self._saved)
+        o.set_calculated()
+        self._queued.discard(o)
+        self._saved[o] = 1
+
+    def release(self, o):
+        assert(o in self._queued)
+        assert(o not in self._free)
+        self._queued.discard(o)
+        self._free.add(o)
+
+    def make_writable(self, o, new_hash):
+        r = self._saved.get(o)
+        if r is None:
+            if o in self._calculated:
+                self._calculated.discard(o)
+            else:
+                assert(o in self._free)
+        elif r == 1:
+            del self._saved[o]
+        else:
+            return self.get_writable_object()
+        o.clear()
+        self._queued.add(o)
+        return o
+        
+        
 
 class LikeCalcEnvironment(object):
     _CALC_ACTION = 0
@@ -568,15 +754,11 @@ class LikeCalcEnvironment(object):
         #   if a new slot is needed, the free pool will be used, if it is empty
         #   then the calculated pool will be used. If that is also empty, then 
         #   a ValueError will be raised.
-        self._free_eigen_storage_structs = set(xrange(self.num_eigen_storage_structs))
-        self._saved_eigen_storage_structs = {} # eigen solution index to state_id
-        self._calculated_eigen_storage_structs = {} # eigen solution index to state_id
-        self._cached_eigen = {} # state_id to eigen solution index
-
-        self._free_prob_matrices = set(xrange(self.num_prob_matrices))
-        self._saved_prob_matrices = {} # prob mat index to [ref count, state_id]
-        self._calculated_prob_matrices = {} # prob mat index to state_id
-        self._cached_prob_matrices = {} # state_id to prob mat index
+        self._eigen_cache = CalculatedCache(self._wrap_eigen_soln_structs, "EigenSolution")
+        self._prob_mat_cache = CalculatedCache(self._wrap_prob_mat, "ProbMat")
+        self._partial_cache = CalculatedCache(self._wrap_partial, "PartialLikelihood")
+        self._state_code_cache = CalculatedCache(self._wrap_state_code_array, "StateCodeArray")
+        self._rescalers_cache = CalculatedCache(self._wrap_rescalers, "Rescaler")
 
     def __del__(self):
         self.release_resources()
@@ -589,6 +771,17 @@ class LikeCalcEnvironment(object):
             self._handle = None
             self._incarnated = False
             
+            del self._wrap_eigen_soln_structs
+            del self._wrap_prob_mat
+            del self._wrap_partial
+            del self._wrap_state_code_array
+            del self._wrap_rescalers
+            del self._eigen_cache
+            del self._prob_mat_cache
+            del self._partial_cache
+            del self._state_code_cache
+            del self._rescalers_cache
+            
             del self._free_eigen_storage_structs
             del self._saved_eigen_storage_structs
             del self._calculated_eigen_storage_structs
@@ -599,133 +792,104 @@ class LikeCalcEnvironment(object):
             del self._calculated_prob_matrices
             del self._cached_prob_matrices
 
-    def calc_eigen_soln(self, model, state_id, eigen_soln_caching=(CachingFacets.DO_NOT_SAVE,)):
+    def calc_eigen_soln(self, model, model_state_hash, eigen_soln_caching=(CachingFacets.DO_NOT_SAVE,)):
         if not self._incarnated:
             self._do_beagle_init()
-        _LOG.debug("LikeCalcEnvironment.calc_eigen_soln model=%d state_id=%s eigen_soln_caching=%s" % (id(model), str(state_id), str(eigen_soln_caching)))
+        _LOG.debug("LikeCalcEnvironment.calc_eigen_soln model=%d model_state_hash=%s eigen_soln_caching=%s" % (id(model), str(model_state_hash), str(eigen_soln_caching)))
         cf = eigen_soln_caching[0]
-        
-        es_index = self._cached_eigen.get(state_id)
-
-            
-        if cf == CachingFacets.SAVE_REPLACE:
-            if (es_index is not None) and (es_index == eigen_soln_caching[1]):
-                return es_index
-            raise NotImplementedError("REPLACE of eigen structures not supported")
+        e_cache = self._eigen_cache
+        e_hash = EigenSolutionWrapper.calc_hash(model_state_hash)
+        if cf == CachingFacets.RELEASE_THEN_SAVE:
+            es_wrap = self._wrap_eigen_soln_structs[ eigen_soln_caching[1] ]
+            if es_wrap.state_hash == e_hash:
+                return es_wrap
+            es_wrap = e_cache.make_writable(es_wrap)
         else:
-            if es_index is not None:
-                if cf == CachingFacets.SAVE_ANYWHERE:
-                    if es_index in self._calculated_eigen_storage_structs:
-                        del self._calculated_eigen_storage_structs[es_index]
-                        self._saved_eigen_storage_structs[es_index] == state_id
-                    else:
-                        assert(es_index in self._saved_eigen_storage_structs)
-                return es_index
-                
-            if self._free_eigen_storage_structs == _EMPTY_SET:
-                if self._calculated_eigen_storage_structs == _EMPTY_DICT:
-                    raise ValueError("No eigen solution structures available!")
-                es_index = iter(self._calculated_eigen_storage_structs).next()
-                cached_state_id = self._calculated_eigen_storage_structs[es_index]
-                if cached_state_id in self._cached_eigen:
-                    del self._cached_eigen[cached_state_id]
-                del self._calculated_eigen_storage_structs[es_index]
-            else:
-                es_index = iter(self._free_eigen_storage_structs).next()
-                self._free_eigen_storage_structs.remove(es_index)
-        
-        cdsctm_set_q_mat(model.cmodel, model.q_mat)
+            es_wrap = e_cache.get_from_cache(e_hash)
+
+            if es_wrap is not None:
+                if cf ==  CachingFacets.SAVE_ANYWHERE:
+                    e_cache.incr_ref_count(es_wrap)
+                return es_wrap
+    
+            es_wrap = e_cache.get_writable_object()
+
         try:
-            _LOG.debug("Calling cdsctm_calc_eigens(%d, %d)" % (id(model), es_index))
-            cdsctm_calc_eigens(model.cmodel, es_index)
+            es_wrap.calculate(model, model_state_hash)
         except:
-            self._free_eigen_storage_structs.add(es_index)
-            raise
-        self._cached_eigen[state_id] = es_index
+            e_cache.release(es_wrap)
+        
         if cf == CachingFacets.DO_NOT_SAVE:
-            self._calculated_eigen_storage_structs[es_index] = state_id
+            e_cache.flag_as_calculated(es_wrap)
         else:
-            self._saved_eigen_storage_structs[es_index] = state_id
-        return es_index
+            e_cache.save_obj(es_wrap)
+        return es_wrap
 
 
-    def calc_prob_from_eigen(self, edge_len, asrv, eigen_soln_index, eigen_state_id, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
-        '''Returns a list of tuples.  Each element of which is: 
-            (probability matrix index, UID)
-           where UID is a unique identifier calculated from the eigen_state_id and the "effective" branch length
-                used for the calculation.
-           These UID's are useful for checking to verify that the contents of a probability transition matrix
-                are valid for subsequent calculations (we can check when we rely on a cache that it's ID 
-                matches the "slot" in the tree that it is supposed to match)
+    def calc_prob_from_eigen(self, edge_len, asrv, eigen_soln, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
+        '''Returns a list of ProbMatWrapper objects."""
         '''
         if not self._incarnated:
             self._do_beagle_init()
-        _LOG.debug("LikeCalcEnvironment.calc_prob_from_eigen edge_len=%f asrv=%s eigen_soln_index=%s eigen_state_id=%s prob_mat_caching=%s" % (float(edge_len), str(asrv), str(eigen_soln_index), str(eigen_state_id), str(prob_mat_caching)))
-        assert(eigen_soln_index < self.num_eigen_storage_structs)
-        assert(eigen_soln_index == self._cached_eigen[eigen_state_id])
+        _LOG.debug("LikeCalcEnvironment.calc_prob_from_eigen edge_len=%f asrv=%s eigen_soln_index=%s eigen_state_id=%s prob_mat_caching=%s" % (float(edge_len), str(asrv), str(eigen_soln.index), str(eigen_soln.state_hash), str(prob_mat_caching)))
         cf = prob_mat_caching[0]
+
         if asrv is None:
             nc = 1
-            rates = (1,)
+            rates = (1.0,)
+            asrv_hash = _NONE_HASH
         else:
             nc = asrv.num_categories
             rates = asrv.rates
-        if cf == CachingFacets.SAVE_REPLACE:
-            raise NotImplementedError("REPLACE of probability matrices not supported")
-        else:
-            prmat_index_list = []
-            for rate_categ in range(nc):
-                if self._free_prob_matrices == _EMPTY_SET:
-                    if self._calculated_prob_matrices == _EMPTY_DICT:
-                        raise ValueError("No prob matrices available!")
-                    prmat_index = iter(self._calculated_prob_matrices).next()
-                    cached_state_id = self._calculated_prob_matrices[prmat_index]
-                    if cached_state_id in self._cached_prob_matrices:
-                        del self._cached_prob_matrices[cached_state_id]
-                    del self._calculated_prob_matrices[prmat_index]
-                else:
-                    prmat_index = iter(self._free_prob_matrices).next()
-                    self._free_prob_matrices.remove(prmat_index)
-                prmat_index_list.append(prmat_index)
-        effective_edge_lengths = [edge_len*rm for rm in rates]
-        try:
-            _LOG.debug("Calling cdsctm_calc_pr_mats(%d, %d, %s, %s)" % (self._handle, eigen_soln_index, str(effective_edge_lengths), str(prmat_index_list)))
-            cdsctm_calc_pr_mats(self._handle, eigen_soln_index, effective_edge_lengths, prmat_index_list)
-        except:
-            self._free_prob_matrices.add(*prmat_index_list)
-            raise
+            asrv_hash = asrv.state_hash
+        p_cache = self._prob_mat_cache
         to_return = []
-        for eb, pmi in izip(effective_edge_lengths, prmat_index_list):
-            combo_state_id = combine_state_id(eigen_state_id, eb)
-            self._cached_prob_matrices[combo_state_id] = pmi
-            if cf == CachingFacets.DO_NOT_SAVE:
-                self._calculated_prob_matrices[pmi] = combo_state_id
-            else:
-                self._saved_eigen_storage_structs[pmi] = combo_state_id
-            to_return.append((pmi, combo_state_id))
-        return to_return
+        eigen_state_hash = eigen_soln.state_hash
+        eff_edge_len_list = []
+        eff_edge_len_hash_list = []
+        pr_wrap_list = []
+        for asrv_categ, rate in enumerate(rates):
+            eff_edge_len = rate*edge_len
+            edge_len_hash = repr(eff_edge_len)
+            eff_edge_len_list.append(eff_edge_len)
+            eff_edge_len_hash_list.append(edge_len_hash)
+            curr_hash = ProbMatWrapper.calc_hash(eigen_state_hash, 
+                                                 asrv_hash,
+                                                 asrv_categ,
+                                                 edge_len_hash)
+            pr_wrap = p_cache.get_from_cache(curr_hash)
 
-    def get_prob_matrices(self, index_list=None, index_and_state_list=None):
-        _LOG.debug("LikeCalcEnvironment.get_prob_matrices index_list=%s index_and_state_list=%s" % (str(index_list), str(index_and_state_list)))
-        if index_list is None:
-            index_list = []
-            if index_and_state_list is None:
-                raise ValueError("Either index_list or index_and_state_list must be used")
-            for ind, state_id in index_and_state_list:
-                try:
-                    cached_id = self._calculated_prob_matrices[ind]
-                except:
-                    try:
-                        cached_id = self._saved_prob_matrices[ind][1]
-                    except:
-                        raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
-                if cached_id != state_id:
-                    raise RuntimeError("Prob matrix stored at %d does not match state identifier '%s'" % (ind, str(state_id)))
-                index_list.append(ind)
+            if pr_wrap is not None:
+                # cache-hit...
+                if (cf == CachingFacets.RELEASE_THEN_SAVE) and (curr_hash != prob_mat_caching[1]):
+                    raise ValueError("Calculation of probability matrix: RELEASE_THEN_SAVE specified, but the cache returned an unexpected object")
+            else:
+                pr_wrap = p_cache.get_writable_object()
+            pr_wrap_list.append(pr_wrap)
+
+        ProbMatWrapper.calculate_list(pr_wrap_list,
+                                      eigen_soln,
+                                      asrv,
+                                      eff_edge_len_list, 
+                                      eigen_hash=eigen_state_hash,
+                                      asrv_hash=asrv_hash, 
+                                      eff_edge_len_hash=eff_edge_len_hash_list)
+        if cf == CachingFacets.DO_NOT_SAVE:
+            for p in pr_wrap_list:
+                p_cache.flag_as_calculated(p)
         else:
-            for ind in index_list:
-                if (ind not in self._calculated_prob_matrices) and (ind not in self._saved_prob_matrices):
-                    raise ValueError("The Prob matrix at index %d has not been calculated yet" % ind)
+            for p in pr_wrap_list:
+                p_cache.save_obj(p)
+        return pr_wrap_list
+
+
+    def get_prob_matrices(self, pr_wrap_list):
+        _LOG.debug("LikeCalcEnvironment.get_prob_matrices([%s])" % (', '.join(['%d' % i.index for i in pr_wrap_list])))
+        index_list = []
+        for p in pr_wrap_list:
+            assert(p.like_calc_env is self)
+            assert(p.is_calculated)
+            index_list.append(p.index)
         _LOG.debug("Calling cdsctm_get_pr_mats(%d, %s)" % (self._handle, str(index_list)))
         return cdsctm_get_pr_mats(self._handle, index_list)
 
@@ -799,7 +963,7 @@ class LikeCalcEnvironment(object):
             nd._LCE_is_internal = True
             if nd._LCE_save_partials:
                 if nd._LCE_buffer_index is not None:
-                    caching_arg = (CachingFacets.SAVE_REPLACE, nd._LCE_buffer_index)
+                    caching_arg = (CachingFacets.RELEASE_THEN_SAVE, nd._LCE_buffer_index)
                 else:
                     caching_arg = (CachingFacets.SAVE_ANYWHERE)
             p = self._calc_single_partial(left_child, right_child)
@@ -816,12 +980,12 @@ class LikeCalcEnvironment(object):
                 self._free_cached_partial(right_child._LCE_buffer_index)
                 right_child._LCE_buffer_index = None
             
-    def _prob_mat_cache(self, model, node):
+    def fetch_from_prob_mat_cache(self, model, node):
         assert(False)
         
         
     def _add_child_partial_calc(self, model, destination_node, child):
-        pmi_state = self._prob_mat_cache(model, child)
+        pmi_state = self.fetch_from_prob_mat_cache(model, child)
         if pmi_state is None:
             if 1 + self._num_queued_prob_mats > self._num_prob_mats_avail_for_current:
                 self._force_calc_queued_partials(model)

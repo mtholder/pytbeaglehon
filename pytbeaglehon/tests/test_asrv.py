@@ -74,9 +74,9 @@ class ASRVTest(unittest.TestCase):
         assert_list_eq(self, rhm.rates, expected)
     def test_hashing(self):
         rhm = RateHetManager(shape=0.5, num_categories=4, rate_het_type=RateHetType.GAMMA_EQ_CAT_MEAN)
-        h1 = rhm.state_hash()
+        h1 = rhm.state_hash
         rhm.shape = 0.6
-        h2 = rhm.state_hash()
+        h2 = rhm.state_hash
         self.assertNotEqual(h1, h2)
 
 # pylint: disable-msg=C0103

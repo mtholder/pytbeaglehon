@@ -66,12 +66,12 @@ class RateHetManager(object):
         if probabilities:
             self.probabilities = probabilities
 
-    def state_hash(self):
+    def get_state_hash(self):
         if self._state_hash_dirty:
             self._state_hash = hash(tuple([float(i) for i in self.rates] + [float(i) for i in self.probabilities]))
             self._state_hash_dirty = False
         return self._state_hash
-        
+    state_hash = property(get_state_hash)
 
     def get_num_cat(self):
         "Returns the number of rate categories."

@@ -82,9 +82,9 @@ def get_logger(name="PYT_BEAGLE_HON"):
     return logger
 
 class CachingFacets:
-    DO_NOT_SAVE = 0
-    SAVE_REPLACE = 1
-    SAVE_ANYWHERE = 2
+    DO_NOT_SAVE = 0 # the requested object can be reused in subsequent cache calls
+    RELEASE_THEN_SAVE = 1 # release the current object, but save the newly calculated instance in a cache
+    SAVE_ANYWHERE = 2 # save the newly calculated instance in a cache
 
 def approx_equal(f, s, tol):
     return abs(f - s <= tol)

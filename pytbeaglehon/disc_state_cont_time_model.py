@@ -36,10 +36,13 @@ class DiscStateContTimeModel(object):
         self._changed_params.add(None) # having a non-empty set assures that the q_mat will be recognized as dirty
     
     
-    def prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
-        pmi = self.calc_prob_matrices(edge_len, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
-        return self._fetch_prob_matrices(pmi)
-        
+    def prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None, as_wrappers=False):
+        """returns probability matrices for all rate categories for the model given 
+        the edge length `edge_len` 
+        """
+        prob_wrapper_list = self.calc_prob_matrices(edge_len, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
+        return self._fetch_prob_matrices(prob_wrapper_list)
+
     def __str__(self):
         return 'DiscStateContTimeModel for %s with asrv=%s at %d' % (str(self.char_type), str(self.asrv), id(self))
 
@@ -73,8 +76,8 @@ class DiscStateContTimeModel(object):
     def asrv_is_dirty(self):
         if self.asrv is None:
             return False
-        self._asrh_hash = self.asrv.state_hash()
-        return self._asrh_hash != self._prev_asrv_hash
+        self._asrv_hash = self.asrv.state_hash
+        return self._asrv_hash != self._prev_asrv_hash
 
     def calc_q_mat(self):
         raise NotImplementedError()
@@ -103,13 +106,14 @@ class DiscStateContTimeModel(object):
         return self._q_mat_hash
     q_mat_hash = property(get_q_mat_hash)
 
-    def state_hash(self):
+    def get_state_hash(self):
         if  (self._total_state_hash is None) or  self.q_mat_is_dirty() or self.asrv_is_dirty():
             self._total_state_hash = hash((id(self), self.q_mat_hash, self._asrv_hash))
             if self._prev_asrv_hash != self._asrv_hash:
                 self._prev_asrv_hash = self._asrv_hash
         return self._total_state_hash
-     
+    state_hash = property(get_state_hash)
+    
     def convert_eigen_soln_caching(self, in_eigen_soln_caching):
         if in_eigen_soln_caching is None:
             return (CachingFacets.DO_NOT_SAVE,)
@@ -124,28 +128,23 @@ class DiscStateContTimeModel(object):
         """Returns and an index and state list object which records where the probability matrices
         are stored in the LikeCalcEnvironment.
         """
-        state_id = self.state_hash()
-        esi = self._calc_env.calc_eigen_soln(model=self, 
-                                             state_id=state_id,
-                                             eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
-        self._eigen_soln_index = esi
-        pmi = self._calc_env.calc_prob_from_eigen(edge_len, 
+        es_wrapper = self.get_eigen_soln(eigen_soln_caching=eigen_soln_caching)
+        return self._calc_env.calc_prob_from_eigen(edge_len, 
                                          self.asrv,
-                                         eigen_soln_index=esi,
-                                         eigen_state_id=state_id,
+                                         eigen_soln=es_wrapper,
                                          prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))
-        return pmi
-    def get_eigen_soln_index(self, eigen_soln_caching=None):
-        state_id = self.state_hash()
-        esi = self._calc_env.calc_eigen_soln(model=self, 
-                                             state_id=state_id,
+
+    def get_eigen_soln(self, eigen_soln_caching=None):
+        state_id = self.state_hash
+        es_wrapper = self._calc_env.calc_eigen_soln(model=self, 
+                                             model_state_hash=state_id,
                                              eigen_soln_caching=self.convert_eigen_soln_caching(eigen_soln_caching))
-        self._eigen_soln_index = esi
-        return self._eigen_soln_index
-    eigen_soln_index = property(get_eigen_soln_index)
+        self._eigen_soln_wrapper = es_wrapper
+        return self._eigen_soln_wrapper
+    eigen_soln = property(get_eigen_soln)
         
-    def _fetch_prob_matrices(self, index_and_state_list):
-        return self._calc_env.get_prob_matrices(index_and_state_list=index_and_state_list)
+    def _fetch_prob_matrices(self, prob_wrapper_list):
+        return self._calc_env.get_prob_matrices(prob_wrapper_list)
 
 
     def _incarnate(self):
