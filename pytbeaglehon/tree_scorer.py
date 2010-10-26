@@ -15,13 +15,19 @@ Expectations of a tree object:
     
     
 Expectations of a node objects:
-    "children" attribute returns a list of two children or an empty list
+    "children" attribute (or property) is a list of two children Nodes or an
+            empty list
+    
+    "parent" attribute (or property) should be another Node object (or None 
+            for the root)
     
     No attributes used by client code start with _LCE_
     
     leaves have integer "leaf_index" which is in [0, num_leaves) and agrees with
         the order that data was entered in the LCE.
-    
+
+    every node should have a edge_length attribute (or property) with a non-negative
+        float.
 """
 
 class TreeScorer(object):
@@ -37,37 +43,10 @@ class TreeScorer(object):
         self._changed_models = set(like_calc_env.model_list)
         self._num_models = len(like_calc_env.model_list)
         self._cached_model_to_score = {}
+        self.initialize_tree()
+    def initialize_tree(self):
+        pass
         
-        tips = []
-        for nd in self._tree.postorder_internal_node_iter():
-            nd._LCE_prmat_index = None
-            nd._LCE_edge_state_cache = None
-            nd._LCE_is_internal = True
-            nd._LCE_save_partials = True
-            nd._LCE_buffer_index = None
-            nd._LCE_buffer_state_id = None
-            nd._LCE_partial_state_cache = None
-            nd._LCE_edge_state_cache = None
-            for c in nd.children:
-                if not bool(c.children):
-                    tips.append(c)
-        leaf_inds = set()
-        for nd in tips:
-            if nd.leaf_index in leaf_inds:
-                raise ValueError("The leaf_index %s repeated!" % str(nd.leaf_index))
-            leaf_inds.add(nd.leaf_index)
-            nd._LCE_prmat_index = None
-            nd._LCE_edge_state_cache = None
-            nd._LCE_is_internal = False
-            nd._LCE_buffer_index = nd.leaf_index
-            nd._LCE_buffer_state_id = str('leaf%d' % nd.leaf_index)
-            nd._LCE_edge_state_cache = None
-        tips.sort(cmp=lambda x, y: cmp(x.leaf_index, y.leaf_index))
-        max_leaf_ind = tips[-1].leaf_index
-        self._tips = [None] *(1+max_leaf_ind)
-        for nd in tips:
-            self._tips[nd.leaf_index] = nd
-            
         
         
     def get_entire_tree_is_dirty(self):
@@ -101,6 +80,60 @@ class TreeScorer(object):
         finally:
             self._LCE.end_partial_calculations(model)
         return 0.0
+
+class TogglePartialTreeScorer(object):
+    '''Assumes that there are:
+            - enough partials for every internal node to have two
+            - enough prob mats for every edge to have two.
+       This enables an efficient "propose" followed by "accept" or "reject"
+       API.
+
+       Note that when reject is called, the client must then call:
+            1. start_revert()
+            2. parameter changing moves to return the tree to the previous state,
+            3. end_revert()
+       So that the changes to restore the tree do not result in "dirty-ing" of 
+        partials.
+    '''
+
+    def initialize_tree(self):
+        LCE = self._LCE
+        tips = []
+        for nd in self._tree.postorder_internal_node_iter():
+            if nd.parent is None:
+                nd._LCE_prob_mat_stored = None
+                nd._LCE_prob_mat_scratch = None
+            else:
+                nd._LCE_prob_mat_stored = LCE._prob_mat_cache.get_writable_object()
+                nd._LCE_prob_mat_scratch = LCE._prob_mat_cache.get_writable_object()
+                nd._LCE_edge_len_stored = nd.edge_length
+                nd._LCE_edge_len_scratch = nd.edge_length
+            nd._LCE_is_internal = True
+            nd._LCE_partial_stored = LCE._partial_cache.get_writable_object()
+            nd._LCE_partial_scratch = LCE._partial_cache.get_writable_object()
+            for c in nd.children:
+                if not bool(c.children):
+                    tips.append(c)
+        leaf_inds = set()
+        for nd in tips:
+            if nd.leaf_index in leaf_inds:
+                raise ValueError("The leaf_index %s repeated!" % str(nd.leaf_index))
+            leaf_inds.add(nd.leaf_index)
+            nd._LCE_prob_mat_stored = LCE._prob_mat_cache.get_writable_object()
+            nd._LCE_prob_mat_scratch = LCE._prob_mat_cache.get_writable_object()
+            nd._LCE_edge_len_stored = nd.edge_length
+            nd._LCE_edge_len_scratch = nd.edge_length
+            nd._LCE_is_internal = False
+            nd._LCE_buffer_index = nd.leaf_index
+            nd._LCE_state_codes = LCE._wrap_state_code_array[nd.leaf_index]
+            assert(nd._LCE_state_codes.is_calculated)
+        tips.sort(cmp=lambda x, y: cmp(x.leaf_index, y.leaf_index))
+        max_leaf_ind = tips[-1].leaf_index
+        self._tips = [None] *(1+max_leaf_ind)
+        for nd in tips:
+            self._tips[nd.leaf_index] = nd
+            
+    
 ##############################################################################
 ##  pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
 ##

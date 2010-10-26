@@ -346,8 +346,10 @@ class CalculatedCache(object):
         self._calculated = set()
         self._state_to_wrapper = {}
         self._queued = set()
+
     def get_from_cache(self, state_hash):
         return self._state_to_wrapper.get(state_hash)
+
     def save_obj(self, o):
         '''increments the reference count on o'''
         self._queued.discard(o)
@@ -355,7 +357,7 @@ class CalculatedCache(object):
         n = self._saved.setdefault(o, 0)
         self._saved[o] = (n + 1)
 
-    def get_writable_object(self):
+    def get_writable_object(self, o=None):
         '''Returns a free object, and "tells" the wrapper to clear itself.
         
         Following this call, the caller must call exactly one of the following:
@@ -364,15 +366,18 @@ class CalculatedCache(object):
             - `save_obj` to save the object, or
             - `release` to return the object (as uncalculated) to the free pool
         '''
-        try:
-            o = self._free.pop()
-        except KeyError:
+        if o is None:
             try:
-                o = self._calculated.pop()
+                o = self._free.pop()
             except KeyError:
-                raise ValueError("All %s instances are locked" % self.obj_name)
-        o.clear()
-        self._queued.add(o)
+                try:
+                    o = self._calculated.pop()
+                except KeyError:
+                    raise ValueError("All %s instances are locked" % self.obj_name)
+            o.clear()
+            self._queued.add(o)
+        else:
+            self.make_writable(o)
         return o
 
     def flag_as_calculated(self, o):
@@ -395,7 +400,7 @@ class CalculatedCache(object):
         self._queued.discard(o)
         self._free.add(o)
 
-    def make_writable(self, o, new_hash):
+    def make_writable(self, o):
         r = self._saved.get(o)
         if r is None:
             if o in self._calculated:
@@ -818,6 +823,7 @@ class LikeCalcEnvironment(object):
             es_wrap.calculate(model, model_state_hash)
         except:
             e_cache.release(es_wrap)
+            raise
         
         if cf == CachingFacets.DO_NOT_SAVE:
             e_cache.flag_as_calculated(es_wrap)
@@ -848,32 +854,37 @@ class LikeCalcEnvironment(object):
         eff_edge_len_list = []
         eff_edge_len_hash_list = []
         pr_wrap_list = []
-        for asrv_categ, rate in enumerate(rates):
-            eff_edge_len = rate*edge_len
-            edge_len_hash = repr(eff_edge_len)
-            eff_edge_len_list.append(eff_edge_len)
-            eff_edge_len_hash_list.append(edge_len_hash)
-            curr_hash = ProbMatWrapper.calc_hash(eigen_state_hash, 
-                                                 asrv_hash,
-                                                 asrv_categ,
-                                                 edge_len_hash)
-            pr_wrap = p_cache.get_from_cache(curr_hash)
+        try:
+            for asrv_categ, rate in enumerate(rates):
+                eff_edge_len = rate*edge_len
+                edge_len_hash = repr(eff_edge_len)
+                eff_edge_len_list.append(eff_edge_len)
+                eff_edge_len_hash_list.append(edge_len_hash)
+                curr_hash = ProbMatWrapper.calc_hash(eigen_state_hash, 
+                                                     asrv_hash,
+                                                     asrv_categ,
+                                                     edge_len_hash)
+                pr_wrap = p_cache.get_from_cache(curr_hash)
+    
+                if pr_wrap is not None:
+                    # cache-hit...
+                    if (cf == CachingFacets.RELEASE_THEN_SAVE) and (curr_hash != prob_mat_caching[1]):
+                        raise ValueError("Calculation of probability matrix: RELEASE_THEN_SAVE specified, but the cache returned an unexpected object")
+                else:
+                    pr_wrap = p_cache.get_writable_object()
+                pr_wrap_list.append(pr_wrap)
 
-            if pr_wrap is not None:
-                # cache-hit...
-                if (cf == CachingFacets.RELEASE_THEN_SAVE) and (curr_hash != prob_mat_caching[1]):
-                    raise ValueError("Calculation of probability matrix: RELEASE_THEN_SAVE specified, but the cache returned an unexpected object")
-            else:
-                pr_wrap = p_cache.get_writable_object()
-            pr_wrap_list.append(pr_wrap)
-
-        ProbMatWrapper.calculate_list(pr_wrap_list,
-                                      eigen_soln,
-                                      asrv,
-                                      eff_edge_len_list, 
-                                      eigen_hash=eigen_state_hash,
-                                      asrv_hash=asrv_hash, 
-                                      eff_edge_len_hash=eff_edge_len_hash_list)
+            ProbMatWrapper.calculate_list(pr_wrap_list,
+                                          eigen_soln,
+                                          asrv,
+                                          eff_edge_len_list, 
+                                          eigen_hash=eigen_state_hash,
+                                          asrv_hash=asrv_hash, 
+                                          eff_edge_len_hash=eff_edge_len_hash_list)
+        except:
+            for p in pr_wrap_list:
+                p_cache.release(p)
+            raise
         if cf == CachingFacets.DO_NOT_SAVE:
             for p in pr_wrap_list:
                 p_cache.flag_as_calculated(p)
@@ -898,8 +909,15 @@ class LikeCalcEnvironment(object):
             self._do_beagle_init()
         if not isinstance(leaf_data, tuple):
             leaf_data = tuple(leaf_data)
-        _LOG.debug("Calling cdsctm_set_state_code(%s, leaf_index=%s, leaf_data=%s,..))" % (str(self._handle), str(leaf_index), str(leaf_data)))
-        cdsctm_set_state_code(self._handle, leaf_index, leaf_data)
+        o = self._wrap_state_code_array[leaf_index]
+        self._state_code_cache.get_writable_object(o)
+        try:
+            _LOG.debug("Calling cdsctm_set_state_code(%s, leaf_index=%s, leaf_data=%s,..))" % (str(self._handle), str(leaf_index), str(leaf_data)))
+            cdsctm_set_state_code(self._handle, leaf_index, leaf_data)
+        except:
+            self._state_code_cache.release(o)
+            raise
+        self._state_code_cache.save_obj(o)
 
     def tree_scorer(self, tree):
         if not self._incarnated:
