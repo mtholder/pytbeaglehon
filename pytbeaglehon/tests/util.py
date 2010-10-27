@@ -49,13 +49,13 @@ class NodeForTesting(object):
         self.children = []
         self._edge_len = None
         self.leaf_index = None
-    
+        self.edge_length = 0.0
     def parse(newick):
         curr_node = NodeForTesting()
         expect_edge_len =False
         for token in newick_tokenizer(newick):
             if expect_edge_len:
-                curr_node.edge_len = float(token)
+                curr_node.edge_length = float(token)
                 expect_edge_len = False
             else:
                 if token == '(':

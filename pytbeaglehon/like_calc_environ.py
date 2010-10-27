@@ -55,6 +55,7 @@ del _name_to_num
 
 
 
+
 def minimal_LCE(model_list, data):
     '''Simple constructor for a LikeCalcEnvironment that infers:
         data_type (num_states) and asrv from the models in model_list
@@ -92,7 +93,7 @@ def minimal_LCE(model_list, data):
         LCE.set_state_code_array(n, row)
     return LCE
 
-_NONE_HASH = '<None>'
+NONE_HASH = '<None>'
 
 class BufferWrapper(object):
     '''Base class for Python objects that wrap a beagle buffer.  Holds a
@@ -229,8 +230,12 @@ class ProbMatWrapper(BufferWrapper):
             p._asrv = asrv
             p._asrv_hash = asrv_hash
             p._asrv_categ = n
-            p._edge_length = eff_edge_len_list[n]
-            p._edge_length_hash = eff_edge_len_hash[n]
+            eff_edge_len = eff_edge_len_list[n]
+            p._edge_length = eff_edge_len
+            if eff_edge_len_hash is None:
+                p._edge_length_hash = repr(eff_edge_len)
+            else:
+                p._edge_length_hash = eff_edge_len_hash[n]
             p._state_hash = None
             p._instance_hash = None
         return pr_wrap_list
@@ -238,8 +243,10 @@ class ProbMatWrapper(BufferWrapper):
 
 
 class PartialLikeWrapper(BufferWrapper):
+    NO_LEAF_OP, ONE_LEAF_OP, TWO_LEAF_OP = 0, 1, 2
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self.beagle_buffer_index = index + like_calc_env.num_leaves # beagle starts numbering the partials for at num_leaves
         self.revision_index = None # stores the number of times that the wrapped object has changed -- but reversions are allowed
         self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
         self._state_hash_format = 'PL-%d-%d-%%d' % (id(self), index)
@@ -261,7 +268,7 @@ class PartialLikeWrapper(BufferWrapper):
     def set_calculated(self):
         self.revision_index = self.next_revision_index
         self.next_revision_index += 1
-        
+        self._is_calculated = True
     def get_full_state_hash(self):
         if self._full_state_hash is None:
             if self.revision_index is None:
@@ -288,11 +295,35 @@ class PartialLikeWrapper(BufferWrapper):
             self._state_hash = self._state_hash_format % (self.revision_index)
         return self._state_hash
     state_hash = property(get_state_hash)
- 
 
+    def calc_partials_list(operations_list):
+        '''Elements of the list should be lists:
+            [output PartialLikeWrapper,
+             output RescalingMultiplier (or None),
+             input RescalingMultiplier (or None),
+             input left PartialLikeWrapper or StateCodeArrayWrapper,
+             input left ProbMatWrapper,
+             input right PartialLikeWrapper or StateCodeArrayWrapper,
+             input right ProbMatWrapper,
+             ]
+        '''
+        ind_list = []
+        for dest_part, dest_resc, in_resc, left_data, left_pr, right_data, right_pr in operations_list:
+            ind_list.append((dest_part.beagle_buffer_index,
+                dest_resc is None and -1 or dest_resc.index,
+                in_resc is None and -1 or in_resc.index,
+                left_data.beagle_buffer_index,
+                left_pr.index,
+                right_data.beagle_buffer_index,
+                right_pr.index,
+                ))
+        cdsctm_calc_partials(lce._handle, ind_list)
+        
+    calc_partials_list = staticmethod(calc_partials_list)
 class StateCodeArrayWrapper(BufferWrapper):
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
+        self.beagle_buffer_index = index # beagle starts numbering the compact buffers at 0
         self._leaf_index = index
         self._state_hash_format = 'SC-%d-%d-%%d-%%d' % (id(self), index)
         self.next_revision_index = 0 # next unique identifier (will 1+self.revision_index if the current state is not a reversion to a previous state
@@ -306,6 +337,7 @@ class StateCodeArrayWrapper(BufferWrapper):
     def set_calculated(self):
         self.revision_index = self.next_revision_index
         self.next_revision_index += 1
+        self._is_calculated = True
 
     def get_state_hash(self):
         if self._state_hash is None:
@@ -832,18 +864,18 @@ class LikeCalcEnvironment(object):
         return es_wrap
 
 
-    def calc_prob_from_eigen(self, edge_len, asrv, eigen_soln, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
+    def calc_prob_from_eigen(self, edge_length, asrv, eigen_soln, prob_mat_caching=(CachingFacets.DO_NOT_SAVE,)):
         '''Returns a list of ProbMatWrapper objects."""
         '''
         if not self._incarnated:
             self._do_beagle_init()
-        _LOG.debug("LikeCalcEnvironment.calc_prob_from_eigen edge_len=%f asrv=%s eigen_soln_index=%s eigen_state_id=%s prob_mat_caching=%s" % (float(edge_len), str(asrv), str(eigen_soln.index), str(eigen_soln.state_hash), str(prob_mat_caching)))
+        _LOG.debug("LikeCalcEnvironment.calc_prob_from_eigen edge_length=%f asrv=%s eigen_soln_index=%s eigen_state_id=%s prob_mat_caching=%s" % (float(edge_length), str(asrv), str(eigen_soln.index), str(eigen_soln.state_hash), str(prob_mat_caching)))
         cf = prob_mat_caching[0]
 
         if asrv is None:
             nc = 1
             rates = (1.0,)
-            asrv_hash = _NONE_HASH
+            asrv_hash = NONE_HASH
         else:
             nc = asrv.num_categories
             rates = asrv.rates
@@ -856,7 +888,7 @@ class LikeCalcEnvironment(object):
         pr_wrap_list = []
         try:
             for asrv_categ, rate in enumerate(rates):
-                eff_edge_len = rate*edge_len
+                eff_edge_len = rate*edge_length
                 edge_len_hash = repr(eff_edge_len)
                 eff_edge_len_list.append(eff_edge_len)
                 eff_edge_len_hash_list.append(edge_len_hash)
@@ -918,12 +950,13 @@ class LikeCalcEnvironment(object):
             self._state_code_cache.release(o)
             raise
         self._state_code_cache.save_obj(o)
+        assert(o.is_calculated)
 
-    def tree_scorer(self, tree):
+    def tree_scorer(self, tree, tree_scorer_class):
         if not self._incarnated:
             self._do_beagle_init()
         from pytbeaglehon.tree_scorer import TreeScorer
-        return TreeScorer(like_calc_env=self, tree=tree)
+        return tree_scorer_class(like_calc_env=self, tree=tree)
 
     def start_partial_calculations(self, model):
         self._freeable_partials = {}
@@ -936,145 +969,6 @@ class LikeCalcEnvironment(object):
         self._num_prob_mats_avail_for_current = self.num_prob_matrices - len(self._saved_prob_matrices)
         self._queue_nd_order = []
         esi = model.eigen_soln_index # this triggers calculation of eigen solution
-
-    def _force_calc_queued_partials(self, model):
-        if self._num_queued_partials == 0:
-            return
-        assert(self._num_queued_partials == len(self._queue_nd_order))
-        
-        #TODO: this should be reorganized to reduces the number of Python->C->beagle calls!
-        # for nd in self._queue_nd_order:
-        #   do dependency pr mat calcs for each node
-        # figure out what partial slots will be used for all calcs
-        # for nd in self._queue_nd_order:
-        #    add calc codes to list
-        # call beagle calc partials
-        partial_update_actions
-        for nd in self._queue_nd_order:
-            actions = self._queue_nd_to_partial[nd]
-            assert(len(actions) == 3)
-            left_child_action, right_child_action, curr_nd_action = actions
-            left_child_dep, right_child_dep =  left_child_action[1][0], right_child_action[1][0]
-            left_child_post, right_child_post =  left_child_action[1][1], right_child_action[1][1]
-            if left_child_dep[0] is not None:
-                assert(left_child_dep[0] == LikeCalcEnvironment._CALC_ACTION)
-                left_child = left_child_dep[1]
-                left_pmi = self.calc_prob_from_eigen(left_child.edge_length, 
-                                                     asrv=model.asrv,
-                                                     eigen_soln_index=model._eigen_soln_index,
-                                                     eigen_state_id=model.state_hash,
-                                                     prob_mat_caching=(SAVE_ANYWHERE,))
-                left_child._LCE_prmat_index = left_pmi[0]
-                left_child._LCE_edge_state_cache = left_pmi[1]
-            if right_child_dep[0] is not None:
-                assert(right_child_dep[0] == LikeCalcEnvironment._CALC_ACTION)
-                right_child = right_child_dep[1]
-                right_pmi = self.calc_prob_from_eigen(right_child.edge_length, 
-                                                     asrv=model.asrv,
-                                                     eigen_soln_index=model._eigen_soln_index,
-                                                     eigen_state_id=model.state_hash,
-                                                     prob_mat_caching=(SAVE_ANYWHERE,))
-                right_child._LCE_prmat_index = right_pmi[0]
-                right_child._LCE_edge_state_cache = right_pmi[1]
-
-            assert(curr_nd_action[0] == LikeCalcEnvironment._CALC_ACTION)
-            nd._LCE_is_internal = True
-            if nd._LCE_save_partials:
-                if nd._LCE_buffer_index is not None:
-                    caching_arg = (CachingFacets.RELEASE_THEN_SAVE, nd._LCE_buffer_index)
-                else:
-                    caching_arg = (CachingFacets.SAVE_ANYWHERE)
-            p = self._calc_single_partial(left_child, right_child)
-            nd._LCE_buffer_index, nd._LCE_buffer_state_id = p
-            
-            if left_child_post[0] == LikeCalcEnvironment._FREE_ACTION:
-                self._free_cached_prob_mat(left_pmi)
-            if right_child_post[0] == LikeCalcEnvironment._FREE_ACTION:
-                self._free_cached_prob_mat(right_pmi)
-            if (left_child._LCE_is_internal) and (not left_child._LCE_save_partials):
-                self._free_cached_partial(left_child._LCE_buffer_index)
-                left_child._LCE_buffer_index = None
-            if (right_child._LCE_is_internal) and (not right_child._LCE_save_partials):
-                self._free_cached_partial(right_child._LCE_buffer_index)
-                right_child._LCE_buffer_index = None
-            
-    def fetch_from_prob_mat_cache(self, model, node):
-        assert(False)
-        
-        
-    def _add_child_partial_calc(self, model, destination_node, child):
-        pmi_state = self.fetch_from_prob_mat_cache(model, child)
-        if pmi_state is None:
-            if 1 + self._num_queued_prob_mats > self._num_prob_mats_avail_for_current:
-                self._force_calc_queued_partials(model)
-            self._num_queued_prob_mats += 1
-            for_parent = self._queue_nd_to_prob_mats.setdefault(destination_node, [])
-            t = ((LikeCalcEnvironment._CALC_ACTION, child), [LikeCalcEnvironment._FREE_ACTION, None])
-            for_parent.append(t)
-        else:
-            ind, state_id = pmi_state
-            if ind in self._saved_prob_matrices:
-                self._saved_prob_matrices[ind][0] += 1
-            else:
-                self._saved_prob_matrices[ind] = [1, self._calculated_prob_matrices[ind]]
-                del self._calculated_prob_matrices[ind]
-            t = ((None,), [LikeCalcEnvironment._FREE_ACTION, pmi_state])
-        return t
-
-    def _partial_cached(self, nd, lse, rse):
-        if lse is None or rse is None:
-            return None
-        sc = "%s %s" % (lse, rse)
-        
-        if sc == nd._LCE_partial_state_cache:
-            try:
-                i = self._cached_prob_matrices[sc]
-                return (i, sc)
-            except:
-                return None
-        return None
-        
-    def _add_binary_internal_node_to_partial_calc(self, model, destination_node, left_child, right_child):
-        partial_cach = self._partial_cached(destination_node, left_child._LCE_edge_state_cache, right_child._LCE_edge_state_cache)
-        if partial_cach is None:
-            left_pmi = self._add_child_partial_calc(model, destination_node, left_child)
-            right_pmi = self._add_child_partial_calc(model, destination_node, right_child)
-            if 1 + self._num_queued_partials > self._num_partials_avail_for_current:
-                self._force_calc_queued_partials(model)
-            self._num_queued_partials += 1
-            u = self._queue_nd_to_partial.setdefault(destination_node, [])
-            u.append((LikeCalcEnvironment._DEPENDENCY_ACTION, left_pmi))
-            u.append((LikeCalcEnvironment._DEPENDENCY_ACTION, right_pmi))
-            u.append([LikeCalcEnvironment._CALC_ACTION, left_child, right_child])
-            self._queue_nd_order.append(destination_node)
-        else:
-            ind, state_id = partial_cach
-            if ind in self._saved_partials:
-                self._saved_partials[ind][0] += 1
-            else:
-                self._saved_partials[ind] = [1, self._calculated_partials[ind]]
-                del self._calculated_partials[ind]
-        return pmi_state
-        
-    def add_internal_node_to_partial_calc(self, model, node):
-        if not self._in_partial_calcs:
-            raise ValueError("start_partial_calculations must be called before add_internal_node_to_partial_calc")
-        c = node.children
-        nc = len(c)
-        if nc == 2:
-            self._add_binary_internal_node_to_partial_calc(model, node, left_child=c[0], right_child=c[1])
-        elif nc > 2:
-            raise ValueError("Scoring trees with polytomies is not supported (yet).")
-        elif nc == 1:
-            raise ValueError("Scoring trees with nodes with outdegree = 1 is not supported (yet)")
-        elif nc == 0:
-            raise ValueError("add_internal_node_to_partial_calc should only be called for internal nodes")
-            
-    def end_partial_calculations(self, model):
-        self._force_calc_queued_partials(model)
-        if not self._in_partial_calcs:
-            raise ValueError("start_partial_calculations must be called before add_internal_node_to_partial_calc")
-        self._in_partial_calcs = False
 
 
 

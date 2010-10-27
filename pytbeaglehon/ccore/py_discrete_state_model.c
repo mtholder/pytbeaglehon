@@ -84,18 +84,23 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
     unsigned numToCalc;
 	PyObject * edge_len_list_obj, * pr_mat_ind_list_obj;
     struct LikeCalculatorInstance * lci;
+	PYTBEAGLEHON_DEBUG_PRINTF("Entering cdsctm_calc_pr_mats\n");
 	if (!PyArg_ParseTuple(args, "liO!O!", &handle, &eigenIndex, &PyList_Type, &edge_len_list_obj, &PyList_Type, &pr_mat_ind_list_obj))
 		return 0L;
+	PYTBEAGLEHON_DEBUG_PRINTF("getting lci in cdsctm_calc_pr_mats\n");
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L) {
 		PyErr_SetString(PyExc_IndexError, "LikeCalculatorInstance handle out of range");
 		return 0L;
     }
+	PYTBEAGLEHON_DEBUG_PRINTF("unpacking edge lenths in  cdsctm_calc_pr_mats\n");
 	if (listToDoubleArrayMaxSize(edge_len_list_obj, lci->edgeLenScratch, lci->numProbMats, &numToCalc) == 0)
 	    return 0L;
+	PYTBEAGLEHON_DEBUG_PRINTF("unpacking prob mat buffers in  cdsctm_calc_pr_mats\n");
 	if (listToUnsignedArray(pr_mat_ind_list_obj, lci->probMatIndexScratch, numToCalc) == 0) {
 		PyErr_SetString(PyExc_IndexError, "edge length list and prob mat index list must be the same length");
 	}
+	PYTBEAGLEHON_DEBUG_PRINTF("Calling calcPrMats...");
 	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
 	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");
 	    return 0L;

@@ -36,20 +36,20 @@ class DiscStateContTimeModel(object):
         self._changed_params.add(None) # having a non-empty set assures that the q_mat will be recognized as dirty
     
     
-    def prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None, as_wrappers=False):
+    def prob_matrices(self, edge_length, eigen_soln_caching=None, prob_mat_caching=None, as_wrappers=False):
         """returns probability matrices for all rate categories for the model given 
-        the edge length `edge_len` 
+        the edge length `edge_length` 
         """
-        prob_wrapper_list = self.calc_prob_matrices(edge_len, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
+        prob_wrapper_list = self.calc_prob_matrices(edge_length, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
         return self._fetch_prob_matrices(prob_wrapper_list)
 
     def __str__(self):
         return 'DiscStateContTimeModel for %s with asrv=%s at %d' % (str(self.char_type), str(self.asrv), id(self))
 
-    def calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
+    def calc_prob_matrices(self, edge_length, eigen_soln_caching=None, prob_mat_caching=None):
         '''Returns a list containing a transition probability matrix for each rate category.'''
         self._incarnate()
-        return self._calc_prob_matrices(edge_len, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
+        return self._calc_prob_matrices(edge_length, eigen_soln_caching=eigen_soln_caching, prob_mat_caching=prob_mat_caching)
         
 
     def param_changed(self, p):
@@ -124,12 +124,12 @@ class DiscStateContTimeModel(object):
             return (CachingFacets.DO_NOT_SAVE,)
         return (in_prob_mat_caching,)
 
-    def _calc_prob_matrices(self, edge_len, eigen_soln_caching=None, prob_mat_caching=None):
+    def _calc_prob_matrices(self, edge_length, eigen_soln_caching=None, prob_mat_caching=None):
         """Returns and an index and state list object which records where the probability matrices
         are stored in the LikeCalcEnvironment.
         """
         es_wrapper = self.get_eigen_soln(eigen_soln_caching=eigen_soln_caching)
-        return self._calc_env.calc_prob_from_eigen(edge_len, 
+        return self._calc_env.calc_prob_from_eigen(edge_length, 
                                          self.asrv,
                                          eigen_soln=es_wrapper,
                                          prob_mat_caching=self.convert_prob_mat_caching(prob_mat_caching))

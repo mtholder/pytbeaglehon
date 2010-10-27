@@ -14,6 +14,8 @@ from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, R
 
 from pytbeaglehon.like_calc_environ import minimal_LCE
 
+from pytbeaglehon.tree_scorer import create_toggle_partial_tree_scorer
+
 class ModelTest(unittest.TestCase):
     def test_simplest(self):
         m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
@@ -35,9 +37,9 @@ class ModelTest(unittest.TestCase):
         t1_2_data = tuple([0]*4 + [1]*4 + [2]*4 + [3]*4)
         t3_4_data = tuple([0, 1, 2, 3] * 4)
         data = (t1_2_data, t1_2_data, t3_4_data, t3_4_data)
-        LCE = minimal_LCE(model_list=[m], data=data)
+        
         tree = TreeForTesting(newick='((1:0.0, 2:0.0):0.0,(3:0.0,4:0.0):0.01)')
-        scorer = LCE.tree_scorer(tree)
+        scorer = create_toggle_partial_tree_scorer(model_list=[m], data=data, tree=tree)
         lnL = scorer()
         self.assertAlmostEqual(lnL, -95.53419)
 def additional_tests():

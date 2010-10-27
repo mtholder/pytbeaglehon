@@ -23,7 +23,7 @@ import sys
 from itertools import izip
 freq = [.25]*4
 r_mat = [[1.0, 1.0, 1.0], [1.0, 1.0], [1.0]]
-edge_len = 0.01
+edge_length = 0.01
 
 reading_freq, reading_rmat, reading_edge_len = False, False, False
 read_freq, read_rmat, read_edge_len = False, False, False
@@ -46,7 +46,7 @@ for arg in sys.argv[1:]:
             reading_rmat = False
             read_rmat = True
     elif reading_edge_len:
-        edge_len = demand_positive_float(arg, 'edge length')
+        edge_length = demand_positive_float(arg, 'edge length')
         read_edge_len = True
         reading_edge_len = False
     else:
@@ -79,7 +79,7 @@ elif reading_edge_len:
 # Arguments have been parsed. Do the calculation...
 
 model = RevDiscStateContTimeModel(state_freq=freq, r_upper=r_mat)
-mat = model.calc_prob_matrices(edge_len)[0] # returns a list of matrices, but we are not 
+mat = model.calc_prob_matrices(edge_length)[0] # returns a list of matrices, but we are not 
                                             #   using rate het, so we just want
                                             #   the first.
 
