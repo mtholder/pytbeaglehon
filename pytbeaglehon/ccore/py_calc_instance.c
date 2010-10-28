@@ -8,6 +8,7 @@
 #include "discrete_state_model.h"
 #include "internal_like_calc_env.h"
 
+PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr);
 
 PyObject* cPytBeagleHonFree(PyObject *self, PyObject *args) {
 	long handle;
@@ -162,6 +163,20 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
         goto errorExit;
 	}
 	PYTBEAGLEHON_DEBUG_PRINTF("Calling createLikelihoodCalcInstance\n");
+	
+	
+	/* \TEMP only supporting ALWAYS mode for scaling*/
+	resourcePref ^= BEAGLE_FLAG_SCALING_MANUAL;
+	resourcePref ^= BEAGLE_FLAG_SCALING_AUTO;
+    resourcePref ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+	resourcePref |= BEAGLE_FLAG_SCALING_ALWAYS;
+
+	resourceReq ^= BEAGLE_FLAG_SCALING_MANUAL;
+	resourceReq ^= BEAGLE_FLAG_SCALING_AUTO;
+    resourceReq ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+	resourceReq |= BEAGLE_FLAG_SCALING_ALWAYS;
+	
+	
 	handle = createLikelihoodCalcInstance(
 	        numLeaves,
             numPatterns,
@@ -274,3 +289,90 @@ PyObject* pySetStateCodeArray(PyObject *self, PyObject *args) {
 
 
 }
+
+PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
+	long handle;
+	unsigned i;
+	unsigned opArraySize, waitTupleSize;
+	PyObject *item, *r_item;
+    PyObject * opList = 0L;
+    PyObject * waitTuple = 0L;
+    if (!PyArg_ParseTuple(args, "lO!O!", &handle, &PyList_Type, &opList, &PyTuple_Type, &waitTuple))
+        return 0L;
+    opArraySize = (unsigned) PyList_Size(opList);
+    waitTupleSize = (unsigned) PyTuple_Size(waitTuple);
+    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    if (LCI == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+    if (opArraySize > LCI->numPartialStructs) {
+        PyErr_SetString(PyExc_IndexError, "Length number of update partial operations in one call cannot exceed the number of partial structures requested for the instance.");
+        return 0L;
+    }
+    if (waitTupleSize > LCI->numPartialStructs) {
+        PyErr_SetString(PyExc_IndexError, "The number of partials to wait for cannot exceed the number of partial structures requested for the instance.");
+        return 0L;
+    }
+
+	for (i = 0; i < opArraySize; ++i) {
+		item = PyList_GetItem(opList, i);
+		if (item == 0L) {
+			return 0L;
+		}
+		Py_INCREF(item);
+		if (!PyList_Check(item)) {
+			PyErr_SetString(PyExc_TypeError, "list of operation list expected");
+			Py_DECREF(item);
+			return 0L;
+		}
+		r_item = tupleToOpCode(item, LCI->opScratch + i);
+		Py_DECREF(item);
+		if (0L == r_item)
+			return 0L;
+	}
+	tupleToUnsignedArrayMaxSize(waitTuple, LCI->waitPartialIndexScratch, LCI->numPartialStructs, &waitTupleSize);
+	if (calcPartials(handle, LCI->opScratch, opArraySize, LCI->waitPartialIndexScratch, (int) waitTupleSize) != 0) {
+        PyErr_SetString(PyExc_ValueError, "Error calling calcPartials");
+	    return 0L;
+	}
+	return none();
+}
+
+
+PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr) {
+    assert(opPtr);
+	PyObject *item;
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	long lval;
+	int tmp;
+	if (pytuple_len != 7) {
+		PyErr_SetString(PyExc_IndexError, "Operation tuple should have 7 integers");
+		return 0L;
+	}
+    /* dest partial */
+    if (extractNonNegativeIntFromTuple(tuple_obj, 0, &tmp) == 0)
+        return 0L;
+    opPtr->destinationPartials = tmp;
+    if (extractLongFromTuple(tuple_obj, 1, &lval) == 0)
+        return 0L;
+	opPtr->destinationScaleWrite = (int) lval;
+    if (extractLongFromTuple(tuple_obj, 2, &lval) == 0)
+        return 0L;
+	opPtr->destinationScaleRead = lval;
+    if (extractNonNegativeIntFromTuple(tuple_obj, 3, &tmp) == 0)
+        return 0L;
+	opPtr->child1Partials = tmp;
+    if (extractNonNegativeIntFromTuple(tuple_obj, 4, &tmp) == 0)
+        return 0L;
+	opPtr->child1TransitionMatrix = tmp;
+    if (extractNonNegativeIntFromTuple(tuple_obj, 5, &tmp) == 0)
+        return 0L;
+	opPtr->child2Partials = tmp;
+    if (extractNonNegativeIntFromTuple(tuple_obj, 6, &tmp) == 0)
+        return 0L;
+	opPtr->child2TransitionMatrix = tmp;
+	return none();
+}
+

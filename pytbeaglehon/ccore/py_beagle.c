@@ -128,6 +128,9 @@ static PyMethodDef dsct_model_module_functions[] = {
 	{"cdsctm_set_state_code", pySetStateCodeArray, METH_VARARGS,
 		"Sets data arrays for a tip.  Takes instance handle, state code array index, tuple of state codes"},
     
+	{"cdsctm_calc_partials", pyCalcPartials, METH_VARARGS,
+		"Calculates partials from descendants.  Takes the instance handle, a tuple with the beagle operation-codes as lists [out partial-index, out rescale-index, in rescale-index, in lef-partial-or-compact-index, in left-prob-mat-index, in right-partial-or-compact-index, in right-prob-mat-index], and the index of the last partial to wait for (or -1 to not call wait for partials)"},
+    
     
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,
 		"intializer -- takes shape parameter, ncat, dcst_model.RateHetType facet."},

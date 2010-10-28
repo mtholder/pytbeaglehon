@@ -112,6 +112,8 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
     inst->probMatIndexScratch = 0L; 
     inst->probMatScratch = 0L;
     inst->stateCodeArrayScratch = 0L;
+    inst->opScratch = 0L;
+    inst->waitPartialIndexScratch = 0L;
 
 }
 
@@ -204,6 +206,16 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     t->stateCodeArrayScratch = (int *)malloc(t->numPatterns*sizeof(int));
 	if (t->stateCodeArrayScratch == 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc stateCodeArrayScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+    t->opScratch = (BeagleOperation *)malloc(t->numPartialStructs*sizeof(BeagleOperation));
+	if (t->opScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc opScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+    t->waitPartialIndexScratch = (int *)malloc(t->numPartialStructs*sizeof(int));
+	if (t->waitPartialIndexScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc waitPartialIndexScratch in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
 
@@ -332,14 +344,16 @@ int setPatternWeights(long handle, const double * patternWeights) {
 
 
 void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
+	unsigned int i;
 	if (inst == 0L)
 		return;
     if (inst->beagleInstanceCreated)
         beagleFinalizeInstance(inst->beagleInstanceIndex);
-	unsigned int i;
+
 	if (inst->patternWeights != 0L)
 	    free(inst->patternWeights);
-
+    inst->patternWeights = 0L;
+    
 	for (i = 0; i < inst->numInstRateModels; ++i) {
 		if (inst->probModelArray[i] != 0L) {
 			Py_DECREF(inst->probModelArray[i]);
@@ -354,7 +368,8 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 
 	}
 	PYTBEAGLEHON_DEBUG_PRINTF("freeing struct LikeCalculatorInstance->probModelArray...\n");
-	free(inst->probModelArray);
+	if (inst->probModelArray)
+	    free(inst->probModelArray);
 	inst->probModelArray = 0L;
 
 	PYTBEAGLEHON_DEBUG_PRINTF("freeing struct LikeCalculatorInstance->eigenSolutionStructs elements...\n");
@@ -362,18 +377,36 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 		eigenSolutionStructDtor(inst->eigenSolutionStructs[i]);
 		inst->eigenSolutionStructs[i] = 0L;
 	}
-	free(inst->eigenSolutionStructs);
+
+	if (inst->eigenSolutionStructs)
+	    free(inst->eigenSolutionStructs);
 	inst->eigenSolutionStructs = 0L;
+
 	inst->numEigenStorage = 0;
 	
-	free(inst->probMatIndexScratch);
+	if (inst->probMatIndexScratch)
+	    free(inst->probMatIndexScratch);
 	inst->probMatIndexScratch = 0L;
-	free(inst->edgeLenScratch);
+
+	if (inst->edgeLenScratch)
+	    free(inst->edgeLenScratch);
 	inst->edgeLenScratch = 0L;
+
 	freeDblMatrix(inst->probMatScratch);
 	inst->probMatScratch = 0L;
-	free(inst->stateCodeArrayScratch);
+
+    if (inst->stateCodeArrayScratch)
+	    free(inst->stateCodeArrayScratch);
 	inst->stateCodeArrayScratch = 0L;
+
+	if (inst->opScratch)
+	    free(inst->opScratch);
+	inst->opScratch = 0L;
+
+	if (inst->waitPartialIndexScratch)
+	    free(inst->waitPartialIndexScratch);
+	inst->waitPartialIndexScratch = 0L;
+
 }
 
 
@@ -402,6 +435,13 @@ int getComputationalResourceDetails(int resourceIndex,
     if (br == 0L)
         return BEAGLE_ERROR_UNINITIALIZED_INSTANCE;
 
+
+	if (! (br->supportFlags & BEAGLE_FLAG_SCALING_ALWAYS) ) /* \TEMP only supporting ALWAYS scaling */
+	    return BEAGLE_ERROR_GENERAL;
+	
+
+
+
     const unsigned maxIndex = 80;
     if (strlen(br->name) > maxIndex)
         br->name[maxIndex] = '\0';
@@ -411,10 +451,23 @@ int getComputationalResourceDetails(int resourceIndex,
         br->description[maxIndex] = '\0';
     strcpy(description, br->description);
     
-    if (supportedFlags)
+    if (supportedFlags) {  
         *supportedFlags = br->supportFlags;
-    if (requiredFlags)
+        /* \TEMP only supporting ALWAYS scaling */
+        *supportedFlags ^= BEAGLE_FLAG_SCALING_MANUAL;
+        *supportedFlags ^= BEAGLE_FLAG_SCALING_AUTO;
+        *supportedFlags ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+        *supportedFlags |= BEAGLE_FLAG_SCALING_ALWAYS;
+    }
+    if (requiredFlags) {
         *requiredFlags = br->requiredFlags;
+        /* \TEMP only supporting ALWAYS scaling */
+        *requiredFlags ^= BEAGLE_FLAG_SCALING_MANUAL;
+        *requiredFlags ^= BEAGLE_FLAG_SCALING_AUTO;
+        *requiredFlags ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+        *requiredFlags |= BEAGLE_FLAG_SCALING_DYNAMIC;
+    }
+
     return 0;
     
 }
@@ -474,9 +527,33 @@ int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCod
     if (lci == 0L || stateCodeArrayIndex >= lci->numStateCodeArrays) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
-    rc = beagleSetTipStates(lci->beagleInstanceIndex,
-                                 stateCodeArrayIndex,
-                                 stateCodes);
+    rc = beagleSetTipStates(lci->beagleInstanceIndex, stateCodeArrayIndex, stateCodes);
+    return rc;
+}
+
+
+
+int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, const int * waitPartialIndex, int numPartialsToWaitFor) {
+    struct LikeCalculatorInstance * lci;
+    int rc = BEAGLE_SUCCESS;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || numOps >= lci->numPartialStructs) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    if (numOps > 0) {
+        rc = beagleUpdatePartials(lci->beagleInstanceIndex, opArray, numOps, BEAGLE_OP_NONE); /*TEMP: I think BEAGLE_OP_NONE is appropriate if we are in always scale mode*/
+        if (rc != BEAGLE_SUCCESS) {
+            PYTBEAGLEHON_DEBUG_PRINTF("Error in beagleUpdatePartials");
+            return rc;
+        }
+    }
+    if (waitPartialIndex >= 0) {
+        rc = beagleWaitForPartials(lci->beagleInstanceIndex, waitPartialIndex, numPartialsToWaitFor);
+        if (rc != BEAGLE_SUCCESS) {
+            PYTBEAGLEHON_DEBUG_PRINTF("Error in beagleWaitForPartials");
+            return rc;
+        }
+    }
     return rc;
 }
 

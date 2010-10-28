@@ -317,7 +317,8 @@ class PartialLikeWrapper(BufferWrapper):
                 right_data.beagle_buffer_index,
                 right_pr.index,
                 ))
-        cdsctm_calc_partials(lce._handle, ind_list)
+        if len(ind_list) > 0:
+            cdsctm_calc_partials(lce._handle, ind_list, ind_list[-1][0])
         
     calc_partials_list = staticmethod(calc_partials_list)
 class StateCodeArrayWrapper(BufferWrapper):

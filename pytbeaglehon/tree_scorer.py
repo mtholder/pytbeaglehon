@@ -111,7 +111,7 @@ class TogglePartialTreeScorer(TreeScorer):
                 nd._LCE_edge_len_scratch = nd.edge_length
             nd._LCE_edge_len_curr = None
             nd._LCE_prob_mat_curr = {}
-            nd._LCE_partial_curr = None
+            nd._LCE_partial_curr = {}
             nd._LCE_is_internal = True
             nd._LCE_partial_stored = {}
             nd._LCE_partial_scratch = {}

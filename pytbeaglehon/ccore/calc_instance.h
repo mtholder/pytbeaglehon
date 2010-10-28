@@ -92,6 +92,16 @@ int fetchPrMat(long handle, int probMatIndex, double * flattenedMat);
 int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_codes);
 
 
+/* needed for BeagleOperation type in calcPartials call */
+#include <libhmsbeagle/beagle.h>
+
+/** queues the partial operations in opArray.
+    `waitPartialIndex` should be the index of a partial buffer to wait on (or < 0 to return immediatly) 
+    \returns 0 or BeagleReturnCode for failure
+*/
+int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, const int * waitPartialIndexList, int numPartialsToWaitFor);
+
+
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,7 @@ PyObject* pyGetNumComputationalResources(PyObject *self, PyObject *args);
 PyObject* pyGetResourceInfo(PyObject *self, PyObject *args);
 PyObject* pyGetModelList(PyObject *self, PyObject *args);
 PyObject* pySetStateCodeArray(PyObject *self, PyObject *args);
+PyObject* pyCalcPartials(PyObject *self, PyObject *args);
 
 #ifdef __cplusplus
 }

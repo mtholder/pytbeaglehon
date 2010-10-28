@@ -117,36 +117,49 @@ PyObject * double3DMatToList(const double ***arr, unsigned n_mats, unsigned n_ro
 	return lp;
 }
 
+
+int extractLongFromTuple(PyObject * tuple_obj, unsigned i, long *value) {
+    PyObject *item;
+	assert(value);
+    item = PyTuple_GetItem(tuple_obj, i);
+    if (item == 0L) {
+        PyErr_SetString(PyExc_TypeError, "could not extract item from tuple");
+        return 0L;
+    }
+    Py_INCREF(item);
+    if (!PyInt_Check(item)) {
+        Py_DECREF(item);
+        PyErr_SetString(PyExc_TypeError, "integer expected");
+        return 0L;
+    }
+    *value = PyInt_AsLong(item);
+    Py_DECREF(item);
+    return 1;
+}
+
+int extractNonNegativeIntFromTuple(PyObject * tuple_obj, unsigned i, int *value) {
+	long lval;
+	extractLongFromTuple(tuple_obj, i, &lval);
+    if (lval >= INT_MAX || lval < 0) {
+        PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+        return 0L;
+    }
+    *value = lval;
+    return 1;
+}
 PyObject * tupleToUnsignedArrayMaxSize(PyObject *tuple_obj, int *arr, unsigned n, unsigned *actualLen) {
-	PyObject *item;
 	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
 	unsigned i;
-	long lval;
+	int tmp;
 	if (pytuple_len > n) {
 	    PYTBEAGLEHON_DEBUG_PRINTF2("error in tupleToUnsignedArrayMaxSize max=%d, tuple= %d\n", n, pytuple_len);
 		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
 		return 0L;
 	}
 	for (i = 0; i < pytuple_len; ++i) {
-		item = PyTuple_GetItem(tuple_obj, i);
-		if (item == 0L) {
-    		PyErr_SetString(PyExc_TypeError, "could not extract item from tuple");
-			return 0L;
-		}
-		Py_INCREF(item);
-		if (!PyInt_Check(item)) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "integer expected");
-			return 0L;
-		}
-		lval = PyInt_AsLong(item);
-		if (lval >= INT_MAX || lval < 0) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
-	    	return 0L;
-		}
-		arr[i] = (int) lval;
-		Py_DECREF(item);
+	    if (extractNonNegativeIntFromTuple(tuple_obj, i, &tmp) == 0)
+	        return 0L;
+		arr[i] = tmp;
 	}
 	if (actualLen)
 	    *actualLen = pytuple_len;
@@ -154,37 +167,21 @@ PyObject * tupleToUnsignedArrayMaxSize(PyObject *tuple_obj, int *arr, unsigned n
 }
 
 PyObject * tupleToUnsignedArray(PyObject *tuple_obj, int *arr, unsigned n) {
-	PyObject *item;
 	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
 	unsigned i;
-	long lval;
+	int tmp;
 	if (pytuple_len != n) {
 		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
 		return 0L;
 	}
 	for (i = 0; i < n; ++i) {
-		item = PyTuple_GetItem(tuple_obj, i);
-		if (item == 0L) {
-    		PyErr_SetString(PyExc_TypeError, "could not extract item from tuple");
-			return 0L;
-		}
-		Py_INCREF(item);
-		if (!PyInt_Check(item)) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "integer expected");
-			return 0L;
-		}
-		lval = PyInt_AsLong(item);
-		if (lval >= INT_MAX || lval < 0) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
-	    	return 0L;
-		}
-		arr[i] = (int) lval;
-		Py_DECREF(item);
+	    if (extractNonNegativeIntFromTuple(tuple_obj, i, &tmp) == 0)
+	        return 0L;
+		arr[i] = tmp;
 	}
 	return none();
 }
+
 
 PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen) {
 	PyObject *item;
@@ -282,6 +279,8 @@ PyObject * listToDoubleArrayMaxSize(PyObject *list_obj, double *arr, unsigned ma
 	    *actualLen = pylist_len;
 	return none();
 }
+
+
 
 PyObject * listToDoubleArray(PyObject *list_obj, double *arr, unsigned n) {
 	PyObject *item, *f_item;

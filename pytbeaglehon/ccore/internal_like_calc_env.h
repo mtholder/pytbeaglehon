@@ -3,6 +3,10 @@
  */
 #if ! defined(INTERNAL_LIKE_CALC_ENV_H)
 #define INTERNAL_LIKE_CALC_ENV_H
+
+#include <libhmsbeagle/beagle.h>
+
+
 #ifdef __cplusplus
 extern "C" 
 {
@@ -47,11 +51,15 @@ struct LikeCalculatorInstance {
     int * probMatIndexScratch; /* length numProbMats */
     double ** probMatScratch; /* numStates x numStates */
     int * stateCodeArrayScratch; /* */
+    BeagleOperation * opScratch; /* numPartialStructs long */
+    int * waitPartialIndexScratch; /* numPartialStructs long */
     
 };
 
 
 struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
+
+
 
 #ifdef __cplusplus
 }
