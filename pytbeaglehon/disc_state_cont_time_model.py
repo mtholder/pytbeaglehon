@@ -28,6 +28,8 @@ class DiscStateContTimeModel(object):
         self._last_asrv_rates_hash = None
         self._prev_state_hash = None
         self._num_states = None # only used if _char_type is None
+        self._eigen_soln_wrapper = None
+        self._state_freq_hash = None
         param_list = kwargs.get('param_list')
         if param_list is not None:
             for p in param_list:
@@ -58,6 +60,7 @@ class DiscStateContTimeModel(object):
         if self._total_state_hash is not None:
             self._prev_state_hash = self._total_state_hash
         self._total_state_hash = None
+        self._state_freq_hash = None
         self._changed_params.add(p)
 
     def get_char_type(self):
@@ -197,6 +200,37 @@ class DiscStateContTimeModel(object):
     def get_cmodel(self):
         return self._cmodel
     cmodel = property(get_cmodel)
+    
+    def transmit_category_weights(self):
+        "Intended for interal use only -- passes category weights to likelihood calculator for integration of likelihood"
+        es_wrapper = self._eigen_soln_wrapper
+        if es_wrapper is None:
+            raise ValueError("eigen solution must be calculated transmit_category_weights can be called")
+        asrv = self.asrv
+        if asrv is None:
+            from pytbeaglehon.like_calc_environ import NONE_HASH
+            w = (1.0, )
+            wph = NONE_HASH
+        else:
+            w = asrv.probabilities
+            wph = asrv.get_prob_hash()
+        es_wrapper.transmit_category_weights(w, wph)
+
+    def transmit_state_freq(self):
+        "Intended for interal use only -- passes equilibrium state frequencies to likelihood calculator for integration of likelihood"
+        es_wrapper = self._eigen_soln_wrapper
+        if es_wrapper is None:
+            raise ValueError("eigen solution must be calculated transmit_state_freq can be called")
+        sf = self.state_freq
+        sfh = self.state_freq_hash
+        es_wrapper.transmit_state_freq(sf, sfh)
+
+    def get_state_freq_hash(self):
+        if self._state_freq_hash is None:
+            assert(self._state_freq is not None)
+            self._state_freq_hash = repr(self._state_freq)
+        return self._state_freq_hash
+    state_freq_hash = property(get_state_freq_hash)
 
 class RevDiscStateContTimeModel(DiscStateContTimeModel):
 
@@ -279,8 +313,7 @@ class RevDiscStateContTimeModel(DiscStateContTimeModel):
         else:
             self._state_freq.value = v
     state_freq = property(get_state_freq, set_state_freq)
-
-
+    
     q_mat = property(DiscStateContTimeModel.get_q_mat)
 
         

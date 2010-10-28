@@ -311,6 +311,7 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
         return 0L;
     }
     if (waitTupleSize > LCI->numPartialStructs) {
+        PYTBEAGLEHON_DEBUG_PRINTF2("waitTupleSize=%d LCI->numPartialStructs=%d\n", waitTupleSize, LCI->numPartialStructs);
         PyErr_SetString(PyExc_IndexError, "The number of partials to wait for cannot exceed the number of partial structures requested for the instance.");
         return 0L;
     }
@@ -321,7 +322,7 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
 			return 0L;
 		}
 		Py_INCREF(item);
-		if (!PyList_Check(item)) {
+		if (!PyTuple_Check(item)) {
 			PyErr_SetString(PyExc_TypeError, "list of operation list expected");
 			Py_DECREF(item);
 			return 0L;
@@ -342,9 +343,7 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
 
 PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr) {
     assert(opPtr);
-	PyObject *item;
 	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
-	unsigned i;
 	long lval;
 	int tmp;
 	if (pytuple_len != 7) {
@@ -373,6 +372,73 @@ PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr) {
     if (extractNonNegativeIntFromTuple(tuple_obj, 6, &tmp) == 0)
         return 0L;
 	opPtr->child2TransitionMatrix = tmp;
+	return none();
+}
+
+
+PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
+	long handle;
+	unsigned eigenInd;
+	unsigned indArraySize, weightTupleSize;
+    PyObject * indList = 0L;
+    PyObject * weightTuple = 0L;
+    if (!PyArg_ParseTuple(args, "liO!", &handle, &eigenInd, &PyTuple_Type, &weightTuple))
+        return 0L;
+    weightTupleSize = (unsigned) PyTuple_Size(weightTuple);
+    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    if (LCI == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+    if (weightTupleSize != LCI->numStates) {
+        PyErr_SetString(PyExc_IndexError, "The length of the state frequency array does not equal the number of states");
+        return 0L;
+    }
+    if (eigenInd <0 || eigenInd >= LCI->numEigenStorage) {
+        PyErr_SetString(PyExc_IndexError, "The index of the buffer for the state frequencies is out of range.");
+        return 0L;
+    }
+    if (tupleToDoubleArray(weightTuple, LCI->categWeightScratch, weightTupleSize, 1) == 0L)
+        return 0L;
+	if (setStateFreq(handle, LCI->categWeightScratch, (int) weightTupleSize) != 0) {
+        PyErr_SetString(PyExc_ValueError, "Error calling setStateFreq");
+	    return 0L;
+	}
+	return none();
+}
+
+
+
+PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {
+	long handle;
+	unsigned indArraySize, weightTupleSize;
+    PyObject * indList = 0L;
+    PyObject * weightTuple = 0L;
+    if (!PyArg_ParseTuple(args, "lO!O!", &handle, &PyTuple_Type, &indList, &PyTuple_Type, &weightTuple))
+        return 0L;
+    indArraySize = (unsigned) PyTuple_Size(indList);
+    weightTupleSize = (unsigned) PyTuple_Size(weightTuple);
+    if (weightTupleSize != indArraySize){
+        PyErr_SetString(PyExc_IndexError, "Expecting the index list and weight list to have the same length");
+        return 0L;
+    }
+    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    if (LCI == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+    if (indArraySize > LCI->numEigenStorage) {
+        PyErr_SetString(PyExc_IndexError, "Oddly enough, the number of rate category weights has to be less than the number of eigen solution storage slots.");
+        return 0L;
+    }
+    if (tupleToUnsignedArray(indList, LCI->categWeightIndexScratch, indArraySize) == 0L)
+        return 0L;
+    if (tupleToDoubleArray(weightTuple, LCI->categWeightScratch, indArraySize, 1) == 0L)
+        return 0L;
+	if (setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, (int) indArraySize) != 0) {
+        PyErr_SetString(PyExc_ValueError, "Error calling setSingletonCategoryWeights");
+	    return 0L;
+	}
 	return none();
 }
 

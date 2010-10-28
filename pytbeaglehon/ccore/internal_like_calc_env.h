@@ -53,6 +53,8 @@ struct LikeCalculatorInstance {
     int * stateCodeArrayScratch; /* */
     BeagleOperation * opScratch; /* numPartialStructs long */
     int * waitPartialIndexScratch; /* numPartialStructs long */
+    int * categWeightIndexScratch; /* numEigenStorage long */
+    double * categWeightScratch; /* numEigenStorage long */
     
 };
 

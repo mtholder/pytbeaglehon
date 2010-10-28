@@ -101,8 +101,8 @@ int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_co
 */
 int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, const int * waitPartialIndexList, int numPartialsToWaitFor);
 
-
-
+int setSingletonCategoryWeights(long handle, const int * indexList, const double *wtList, int numCateg);
+int setStateFreq(long handle, int bufferIndex, const double *freq);
 #ifdef __cplusplus
 }
 /* end of extern c bit */

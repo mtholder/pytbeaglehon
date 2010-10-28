@@ -47,7 +47,8 @@ class RateHetManager(object):
         if num_categories < 1 or int(num_categories) != num_categories:
             raise ValueError("num_categories must be a positive integer")
         self._num_cat = num_categories
-        self._probabilities = [1.0/num_categories] * num_categories
+        if probabilities is None:
+           probabilities = [1.0/num_categories] * num_categories
         self._rate_list = [1.0] * num_categories
         if rate_het_type <= RateHetType.LAST_GAMMA:
             shape = float(kwargs.get("shape", 0.5))
@@ -65,7 +66,7 @@ class RateHetManager(object):
             self.rates = rates
         if probabilities:
             self.probabilities = probabilities
-
+        self._prob_hash = None
     def get_state_hash(self):
         if self._state_hash_dirty:
             self._state_hash = hash(tuple([float(i) for i in self.rates] + [float(i) for i in self.probabilities]))
@@ -115,7 +116,11 @@ class RateHetManager(object):
             raise ValueError("Sum of probabilities must be 1.0")
         self._state_hash_dirty = True
         self._probabilities = p
+        self._prob_hash = repr(p)
 
+    def get_prob_hash(self):
+        assert(self._prob_hash is not None)
+        return self._prob_hash
 
     def get_shape(self):
         "Returns the shape parameter for a Gamma distribution over rates."

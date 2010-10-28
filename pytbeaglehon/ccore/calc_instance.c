@@ -114,12 +114,15 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
     inst->stateCodeArrayScratch = 0L;
     inst->opScratch = 0L;
     inst->waitPartialIndexScratch = 0L;
+    inst->categWeightIndexScratch = 0L;
+    inst->categWeightScratch = 0L;
 
 }
 
 /* returns 0 if memory allocation fails */
 long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASRVObj ** asrvAliasForEachModel) {
 	unsigned int i;
+	int doubleScratch;
 	int * resourceListPtr = 0L;
 	int resourceListLen = 0;
 	unsigned numRateCategoriesOnBeagle = 1;
@@ -216,6 +219,19 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     t->waitPartialIndexScratch = (int *)malloc(t->numPartialStructs*sizeof(int));
 	if (t->waitPartialIndexScratch == 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc waitPartialIndexScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+	
+	/* this next two should not really be numEigenStorage long, but that is what beagle wants...*/
+    t->categWeightIndexScratch = (int *)malloc(t->numEigenStorage*sizeof(int));
+	if (t->categWeightIndexScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc categWeightIndexScratch in allocateLikeCalcInstanceFields\n");
+		goto errorExit;
+	}
+	doubleScratch = (t->numEigenStorage > t->numStates ? t->numEigenStorage : t->numStates);
+    t->categWeightScratch = (double *)malloc(doubleScratch*sizeof(double));
+	if (t->categWeightScratch == 0) {
+		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc categWeightScratch in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
 
@@ -407,6 +423,14 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	    free(inst->waitPartialIndexScratch);
 	inst->waitPartialIndexScratch = 0L;
 
+	if (inst->categWeightIndexScratch)
+	    free(inst->categWeightIndexScratch);
+	inst->categWeightIndexScratch = 0L;
+
+	if (inst->categWeightScratch)
+	    free(inst->categWeightScratch);
+	inst->categWeightScratch = 0L;
+
 }
 
 
@@ -556,6 +580,43 @@ int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, 
     }
     return rc;
 }
+
+int setSingletonCategoryWeights(long handle, const int * indexList, const double *wtList, int numCateg) {
+    int i;
+    struct LikeCalculatorInstance * lci;
+    int rc = BEAGLE_SUCCESS;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || numCateg >= lci->numEigenStorage) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    for (i = 0; i < numCateg; ++i) {
+        rc = beagleSetCategoryWeights(lci->beagleInstanceIndex, indexList[i], &wtList[i]);
+        if (rc != BEAGLE_SUCCESS) {
+            PYTBEAGLEHON_DEBUG_PRINTF("Error in beagleSetCategoryWeights");
+            return rc;
+        }
+    }
+    return rc;
+}
+
+
+
+int setStateFreq(long handle, int bufferIndex, const double *freq) {
+    struct LikeCalculatorInstance * lci;
+    int rc = BEAGLE_SUCCESS;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || bufferIndex >= lci->numEigenStorage) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    rc = beagleSetStateFrequencies(lci->beagleInstanceIndex, bufferIndex, freq);
+    if (rc != BEAGLE_SUCCESS) {
+        PYTBEAGLEHON_DEBUG_PRINTF("Error in beagleSetStateFrequencies");
+    }
+    return rc;
+}
+
+
+
 
 
 /**

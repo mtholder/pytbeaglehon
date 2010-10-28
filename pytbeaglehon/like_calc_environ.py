@@ -4,7 +4,8 @@ from pytbeaglehon.ccore.disc_state_cont_time_model import \
     cpytbeaglehon_init, cpytbeaglehon_free, cget_num_comp_resources, \
     cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
     cdsctm_calc_eigens, cdsctm_calc_pr_mats, cdsctm_get_pr_mats, \
-    cdsctm_set_state_code
+    cdsctm_set_state_code, cdsctm_calc_partials, cdsctm_set_singleton_category_weights, \
+    cdsctm_set_state_freq
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
 _LOG = get_logger(__name__)
@@ -114,16 +115,21 @@ class BufferWrapper(object):
 
 class EigenSolutionWrapper(BufferWrapper):
 
-    def __init__(self, index, like_calc_env):
+    def __init__(self, index, like_calc_env, num_categ_slots):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
         self._instance_hash_format = 'ES-%d-%d(%%s)' % (id(self), index)
         self.clear()
+        self.num_categ_slots = num_categ_slots # because the number of category weight buffers in beagle is constrained to be the number of 
     def clear(self):
         self._is_calculated = False
         self._model = None 
         self._model_hash = None
         self._state_hash = None
         self._instance_hash = None
+        self._prev_transmitted_weights = None
+        self._prev_transmitted_weights_hash = None
+        self._prev_transmitted_state_freq = None
+        self._prev_transmitted_state_freq_hash = None
 
     def calc_hash(model_state_hash):
         return '%s' % model_state_hash
@@ -156,6 +162,41 @@ class EigenSolutionWrapper(BufferWrapper):
         else:
             assert(model.state_hash == model_state_hash) # doublechecking
             self._model_hash = model_state_hash
+
+    def transmit_category_weights(self, weights, weight_hash):
+        assert(weight_hash is not None)
+        if weight_hash == self._prev_transmitted_weights_hash:
+            return
+        w = tuple(weights)
+        
+        # TEMP this is a hack because we are always telling beagle that we have 
+        #   one 
+        cw_indices = tuple([self.index + i for i in range(len(w))])
+        cdsctm_set_singleton_category_weights(self.like_calc_env._handle, cw_indices, w)
+        self._prev_transmitted_weights = w
+        self._prev_transmitted_weights_hash = weight_hash
+
+    def transmit_state_freq(self, state_freq, state_freq_hash):
+        "Intended for interal use only -- passes equilibrium state frequencies to likelihood calculator for integration of likelihood"
+        assert(state_freq_hash is not None)
+        if state_freq_hash == self._prev_transmitted_state_freq_hash:
+            return
+        w = tuple(state_freq)
+        cdsctm_set_state_freq(self.like_calc_env._handle, self.index, w)
+        self._prev_transmitted_state_freq = w
+        self._prev_transmitted_state_freq_hash = state_freq_hash
+
+
+
+    def get_state_freq_hash(self):
+        if self._state_freq_hash is None:
+            assert(self._state_freq is not None)
+            self._state_freq_hash = repr(self._state_freq)
+        return self._state_freq_hash
+    state_freq_hash = property(get_state_freq_hash)
+
+
+
 
 class ProbMatWrapper(BufferWrapper):
     _hash_format = '%s-%s-%d-%s'
@@ -296,7 +337,7 @@ class PartialLikeWrapper(BufferWrapper):
         return self._state_hash
     state_hash = property(get_state_hash)
 
-    def calc_partials_list(operations_list):
+    def calc_partials_list(lce, operations_list, to_wait_for=tuple()):
         '''Elements of the list should be lists:
             [output PartialLikeWrapper,
              output RescalingMultiplier (or None),
@@ -317,10 +358,13 @@ class PartialLikeWrapper(BufferWrapper):
                 right_data.beagle_buffer_index,
                 right_pr.index,
                 ))
+        _LOG.debug("to_wait_for = " + str(to_wait_for))
+        twf = tuple([i.beagle_buffer_index for i in to_wait_for])
         if len(ind_list) > 0:
-            cdsctm_calc_partials(lce._handle, ind_list, ind_list[-1][0])
-        
+            _LOG.debug("Calling cdsctm_calc_partials(%d, %s, %s)" % (lce._handle, repr(ind_list), repr(twf)))
+            cdsctm_calc_partials(lce._handle, ind_list, twf)
     calc_partials_list = staticmethod(calc_partials_list)
+
 class StateCodeArrayWrapper(BufferWrapper):
     def __init__(self, index, like_calc_env):
         BufferWrapper.__init__(self, index=index, like_calc_env=like_calc_env)
@@ -749,6 +793,16 @@ class LikeCalcEnvironment(object):
         resourceIndex = self._resource_index
         if resourceIndex is None:
             resourceIndex = -1
+        max_num_rate_cats = 0
+        for asrv_el in asrv:
+            if asrv_el is None:
+                nc = 1
+            else:
+                nc = asrv_el.num_categories
+            if nc > max_num_rate_cats:
+                max_num_rate_cats = nc
+        self._num_eigen_allocated = self.num_eigen_storage_structs * max_num_rate_cats
+        self._max_num_rate_cats = max_num_rate_cats
         arg_list = [self._num_leaves, 
                     self.num_patterns,
                     self.pattern_weight_list,
@@ -782,7 +836,7 @@ class LikeCalcEnvironment(object):
         
         self._incarnated = True
         
-        self._wrap_eigen_soln_structs = [EigenSolutionWrapper(index=n, like_calc_env=self) for n in range(self.num_eigen_storage_structs)]
+        self._wrap_eigen_soln_structs = [EigenSolutionWrapper(index=n*max_num_rate_cats, like_calc_env=self, num_categ_slots=max_num_rate_cats) for n in range(self.num_eigen_storage_structs)]
         self._wrap_prob_mat = [ProbMatWrapper(index=n, like_calc_env=self) for n in range(self.num_prob_matrices)]
         self._wrap_partial = [PartialLikeWrapper(index=n, like_calc_env=self) for n in range(self.num_partials)]
         self._wrap_state_code_array = [StateCodeArrayWrapper(index=n, like_calc_env=self) for n in range(self.num_state_code_arrays)]
@@ -953,6 +1007,10 @@ class LikeCalcEnvironment(object):
         self._state_code_cache.save_obj(o)
         assert(o.is_calculated)
 
+    def integrate_likelihood(self, model, root_partials):
+        assert(self._incarnated)
+        assert(model.num_rate_categories == len(root_partials))
+        
     def tree_scorer(self, tree, tree_scorer_class):
         if not self._incarnated:
             self._do_beagle_init()

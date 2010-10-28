@@ -50,6 +50,8 @@ PyObject * tupleToDoubleArray(PyObject *tuple_obj, double *arr, unsigned n, int 
 PyObject * tupleToDoubleMatrix(PyObject *tuple_obj, double **arr, unsigned n_rows, unsigned n_cols, int demandExactLen);
 int extractLongFromTuple(PyObject * tuple_obj, unsigned i, long *value);
 int extractNonNegativeIntFromTuple(PyObject * tuple_obj, unsigned i, int *value);
+int extractLongFromList(PyObject * list_obj, unsigned i, long *value);
+int extractNonNegativeIntFromList(PyObject * list_obj, unsigned i, int *value);
 
 #ifdef __cplusplus
 }

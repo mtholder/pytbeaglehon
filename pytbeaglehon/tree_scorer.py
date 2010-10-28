@@ -56,7 +56,7 @@ class TreeScorer(object):
     entire_tree_is_dirty = property(get_entire_tree_is_dirty)
 
     def __call__(self):
-        return get_ln_L(self)
+        return self.get_ln_L()
 
     def get_ln_L(self):
         if self.entire_tree_is_dirty:
@@ -68,8 +68,6 @@ class TreeScorer(object):
             self._cached_model_to_score[cm] = self._calc_full_traversal_lnL_for_model(cm)
             self._changed_models.remove(cm)
 
-        if num_mods_to_update < self._num_models:
-            raise NotImplementedError("updates of part of the tree are not supported yet.")
 
         self._entire_tree_dirty = False
         self._changed_edges.clear()
@@ -155,8 +153,9 @@ class TogglePartialTreeScorer(TreeScorer):
             if nd._LCE_edge_len_curr is nd._LCE_edge_len_scratch:
                 nd._LCE_edge_len_stored, nd._LCE_edge_len_scratch = nd._LCE_edge_len_scratch, nd._LCE_edge_len_stored
             for mod in self.model_list:
-                if nd._LCE_prob_mat_curr[mod] is nd._LCE_prob_mat_scratch[mod]:
-                    nd._LCE_prob_mat_stored[mod], nd._LCE_prob_mat_scratch[mod] = nd._LCE_prob_mat_scratch[mod], nd._LCE_prob_mat_stored[mod]
+                if nd.parent is not None:
+                    if nd._LCE_prob_mat_curr[mod] is nd._LCE_prob_mat_scratch[mod]:
+                        nd._LCE_prob_mat_stored[mod], nd._LCE_prob_mat_scratch[mod] = nd._LCE_prob_mat_scratch[mod], nd._LCE_prob_mat_stored[mod]
                 if nd._LCE_partial_curr[mod] is nd._LCE_partial_scratch[mod]:
                     nd._LCE_partial_stored[mod], nd._LCE_partial_scratch[mod] = nd._LCE_partial_scratch[mod], nd._LCE_partial_stored[mod]
 
@@ -175,8 +174,14 @@ class TogglePartialTreeScorer(TreeScorer):
                  self._scheduler.add_internal_node_to_partial_calc(node)
         finally:
             self._scheduler.end_partial_calculations()
+            root_partials = self._scheduler._LCE_last_queued_dest
             self._scheduler = None
-
+        model.transmit_category_weights()
+        model.transmit_state_freq()
+        self._LCE.integrate_likelihood(model, root_partials)
+        self._LCE.integrate_likelihood(model, root_partials)
+        
+        self._LCE.integrate_likelihood(model, root_partials)
         return 0.0
 
 

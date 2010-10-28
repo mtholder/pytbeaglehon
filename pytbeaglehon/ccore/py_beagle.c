@@ -130,6 +130,10 @@ static PyMethodDef dsct_model_module_functions[] = {
     
 	{"cdsctm_calc_partials", pyCalcPartials, METH_VARARGS,
 		"Calculates partials from descendants.  Takes the instance handle, a tuple with the beagle operation-codes as lists [out partial-index, out rescale-index, in rescale-index, in lef-partial-or-compact-index, in left-prob-mat-index, in right-partial-or-compact-index, in right-prob-mat-index], and the index of the last partial to wait for (or -1 to not call wait for partials)"},
+	{"cdsctm_set_singleton_category_weights", pySetSingletonCatWts, METH_VARARGS,
+		"Takes a handle, tuple of indices and a tuple of weights.  Puts one weight in each category weight slot"},
+	{"cdsctm_set_state_freq", pySetStateFreq, METH_VARARGS,
+		"Takes a handle, an eigen solution index and a tuple of state frequencies."},
     
     
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,

@@ -137,16 +137,51 @@ int extractLongFromTuple(PyObject * tuple_obj, unsigned i, long *value) {
     return 1;
 }
 
-int extractNonNegativeIntFromTuple(PyObject * tuple_obj, unsigned i, int *value) {
+int extractNonNegativeIntFromTuple(PyObject * list_obj, unsigned i, int *value) {
 	long lval;
-	extractLongFromTuple(tuple_obj, i, &lval);
+	if (extractLongFromTuple(list_obj, i, &lval) == 0)
+	    return 0;
     if (lval >= INT_MAX || lval < 0) {
+        PYTBEAGLEHON_DEBUG_PRINTF1("extractNonNegativeIntFromTuple lval = %ld\n", lval);
         PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
         return 0L;
     }
     *value = lval;
     return 1;
 }
+
+int extractLongFromList(PyObject * list_obj, unsigned i, long *value) {
+    PyObject *item;
+	assert(value);
+    item = PyList_GetItem(list_obj, i);
+    if (item == 0L) {
+        PyErr_SetString(PyExc_TypeError, "could not extract item from list");
+        return 0L;
+    }
+    Py_INCREF(item);
+    if (!PyInt_Check(item)) {
+        Py_DECREF(item);
+        PyErr_SetString(PyExc_TypeError, "integer expected");
+        return 0L;
+    }
+    *value = PyInt_AsLong(item);
+    Py_DECREF(item);
+    return 1;
+}
+
+int extractNonNegativeIntFromList(PyObject * list_obj, unsigned i, int *value) {
+	long lval;
+	if (extractLongFromList(list_obj, i, &lval) == 0L)
+	    return 0L;
+    if (lval >= INT_MAX || lval < 0) {
+        PYTBEAGLEHON_DEBUG_PRINTF1("extractNonNegativeIntFromList lval = %ld\n", lval);
+        PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+        return 0L;
+    }
+    *value = lval;
+    return 1;
+}
+
 PyObject * tupleToUnsignedArrayMaxSize(PyObject *tuple_obj, int *arr, unsigned n, unsigned *actualLen) {
 	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
 	unsigned i;
@@ -184,35 +219,18 @@ PyObject * tupleToUnsignedArray(PyObject *tuple_obj, int *arr, unsigned n) {
 
 
 PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, unsigned *actualLen) {
-	PyObject *item;
 	unsigned pylist_len = (unsigned) PyList_Size(list_obj);
 	unsigned i;
-	long lval;
+	int tmp;
 	if (pylist_len > n) {
 	    PYTBEAGLEHON_DEBUG_PRINTF2("error in listToUnsignedArrayMaxSize max=%d, tuple= %d\n", n, pylist_len);
 		PyErr_SetString(PyExc_IndexError, "list index out of range");
 		return 0L;
 	}
 	for (i = 0; i < pylist_len; ++i) {
-		item = PyList_GetItem(list_obj, i);
-		if (item == 0L) {
-    		PyErr_SetString(PyExc_TypeError, "could not extract item from list");
-			return 0L;
-		}
-		Py_INCREF(item);
-		if (!PyInt_Check(item)) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "integer expected");
-			return 0L;
-		}
-		lval = PyInt_AsLong(item);
-		if (lval >= INT_MAX || lval < 0) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
-	    	return 0L;
-		}
-		arr[i] = (int) lval;
-		Py_DECREF(item);
+		if (extractNonNegativeIntFromList(list_obj, i, &tmp) == 0)
+	        return 0L;
+		arr[i] = tmp;
 	}
 	if (actualLen)
 	    *actualLen = pylist_len;
@@ -220,34 +238,17 @@ PyObject * listToUnsignedArrayMaxSize(PyObject *list_obj, int *arr, unsigned n, 
 }
 
 PyObject * listToUnsignedArray(PyObject *list_obj, int *arr, unsigned n) {
-	PyObject *item;
 	unsigned pylist_len = (unsigned) PyList_Size(list_obj);
 	unsigned i;
-	long lval;
+	int tmp;
 	if (pylist_len != n) {
 		PyErr_SetString(PyExc_IndexError, "list index out of range (in listToUnsignedArray)");
 		return 0L;
 	}
 	for (i = 0; i < n; ++i) {
-		item = PyList_GetItem(list_obj, i);
-		if (item == 0L) {
-    		PyErr_SetString(PyExc_TypeError, "could not extract item from list");
-			return 0L;
-		}
-		Py_INCREF(item);
-		if (!PyInt_Check(item)) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "integer expected");
-			return 0L;
-		}
-		lval = PyInt_AsLong(item);
-		if (lval >= INT_MAX || lval < 0) {
-			Py_DECREF(item);
-    		PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
-	    	return 0L;
-		}
-		arr[i] = (int) lval;
-		Py_DECREF(item);
+		if (extractNonNegativeIntFromList(list_obj, i, &tmp) == 0)
+	        return 0L;
+		arr[i] = tmp;
 	}
 	return none();
 }
