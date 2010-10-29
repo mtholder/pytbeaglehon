@@ -15,9 +15,20 @@ PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
 		return 0L;
 	dsct_model_obj = (DSCTModelObj *)(dsct_model_py_obj);
 	PYTBEAGLEHON_DEBUG_PRINTF1("Setting qmat for model at %ld\n", (long) dsct_model_obj);
+
 	dim = dsct_model_obj->dim;
+	
 	to_return = tupleToDoubleMatrix(tuple_obj, dsct_model_obj->qMat, dim, dim, 1);
-	dsct_model_obj->eigenCalcIsDirty = 1;
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+    	if (dim == 4) {
+            PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[0][0] = %lf; dsct_model_obj->qMat[0][1] = %lf; dsct_model_obj->qMat[0][2] = %lf; dsct_model_obj->qMat[0][3] = %lf;\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
+            PYTBEAGLEHON_DEBUG_PRINTF4("                dsct_model_obj->qMat[1][0] = %lf; dsct_model_obj->qMat[1][1] = %lf; dsct_model_obj->qMat[1][2] = %lf; dsct_model_obj->qMat[1][3] = %lf;\n", dsct_model_obj->qMat[1][0], dsct_model_obj->qMat[1][1], dsct_model_obj->qMat[1][2], dsct_model_obj->qMat[1][3]);
+            PYTBEAGLEHON_DEBUG_PRINTF4("                dsct_model_obj->qMat[2][0] = %lf; dsct_model_obj->qMat[2][1] = %lf; dsct_model_obj->qMat[2][2] = %lf; dsct_model_obj->qMat[2][3] = %lf;\n", dsct_model_obj->qMat[2][0], dsct_model_obj->qMat[2][1], dsct_model_obj->qMat[2][2], dsct_model_obj->qMat[2][3]);
+            PYTBEAGLEHON_DEBUG_PRINTF4("                dsct_model_obj->qMat[3][0] = %lf; dsct_model_obj->qMat[3][1] = %lf; dsct_model_obj->qMat[3][2] = %lf; dsct_model_obj->qMat[3][3] = %lf;\n", dsct_model_obj->qMat[3][0], dsct_model_obj->qMat[3][1], dsct_model_obj->qMat[3][2], dsct_model_obj->qMat[3][3]);
+            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ dsct_model_obj->eigenCalcIsDirty = 1;\n");
+        }
+#   endif
+    dsct_model_obj->eigenCalcIsDirty = 1;
 	PYTBEAGLEHON_DEBUG_PRINTF1("qmat for model at %ld set.\n", (long) dsct_model_obj);
 	return to_return;
 }
@@ -28,8 +39,10 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 	DSCTModelObj * dsct_model_obj;
 	if (!PyArg_ParseTuple(args, "O!i", &dsct_model_type, &dsct_model_py_obj, &eigenIndex))
 		return 0L;
-	PYTBEAGLEHON_DEBUG_PRINTF2("In C. calling cdsctm_calc_eigens(%ld, %d)\n", (long) dsct_model_py_obj, eigenIndex);
 	dsct_model_obj = (DSCTModelObj *)(dsct_model_py_obj);
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj->eigenBufferIndex=%d; dsct_model_obj->eigenCalcIsDirty = 1; recalc_eigen_mat(dsct_model_obj);\n", eigenIndex);
+#   endif
 	dsct_model_obj->eigenBufferIndex = eigenIndex;
 	dsct_model_obj->eigenCalcIsDirty = 1;
 	if (recalc_eigen_mat(dsct_model_obj) == 0)
@@ -79,6 +92,9 @@ PyObject* cdsctm_get_pr_mats(PyObject *self, PyObject *args) {
         return 0L;
 }
 PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
+#   if defined(DEBUG_PRINTING) && DEBUG_PRINTING
+        unsigned i;
+#   endif
     long handle;
     int eigenIndex;
     unsigned numToCalc;
@@ -100,7 +116,17 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
 	if (listToUnsignedArray(pr_mat_ind_list_obj, lci->probMatIndexScratch, numToCalc) == 0) {
 		PyErr_SetString(PyExc_IndexError, "edge length list and prob mat index list must be the same length");
 	}
-	PYTBEAGLEHON_DEBUG_PRINTF("Calling calcPrMats...");
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+	    PYTBEAGLEHON_DEBUG_PRINTF3("/* cAPI Call */ calcPrMats(handle=%ld, eigenIndex=%d, numToCalc=%ud, edgeLen={", handle, eigenIndex, numToCalc);
+	    for (i = 0; i < numToCalc; ++i) {
+    	    PYTBEAGLEHON_DEBUG_PRINTF1("%lf, ", lci->edgeLenScratch[i]);
+        }
+	    PYTBEAGLEHON_DEBUG_PRINTF("}, probMatIndex={");
+	    for (i = 0; i < numToCalc; ++i) {
+    	    PYTBEAGLEHON_DEBUG_PRINTF1("%lf, ", lci->edgeLenScratch[i]);
+        }
+	    PYTBEAGLEHON_DEBUG_PRINTF("});\n");
+#   endif
 	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
 	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");
 	    return 0L;

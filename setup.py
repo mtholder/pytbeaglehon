@@ -89,7 +89,13 @@ if "--use-ncl" in args:
     have_ncl = 1
 else:
     have_ncl = 0
-
+if "--trace-printing" in args:
+    if kDebugPrint != "1":
+        sys.stderr.write("Warning: --trace-printing only has an effect if --debug is also specified\n")
+    kTracePrint = "1"
+    args.remove("--trace-printing")
+else:
+    kTracePrint = "0"
 
 
 
@@ -114,6 +120,7 @@ include_dirs = []
 library_dirs = []
 libraries = []
 preprocessor_defines =[("DEBUG_PRINTING", kDebugPrint),
+                       ("API_TRACE_PRINTING", kTracePrint),
                        ("BUILDING_FOR_PYTHON", 1),
                        ("HAVE_INLINE", have_inline),
                        ("HAVE_NCL", have_ncl)
