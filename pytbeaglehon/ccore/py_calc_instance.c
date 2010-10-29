@@ -400,7 +400,7 @@ PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
     }
     if (tupleToDoubleArray(weightTuple, LCI->categWeightScratch, weightTupleSize, 1) == 0L)
         return 0L;
-	if (setStateFreq(handle, LCI->categWeightScratch, (int) weightTupleSize) != 0) {
+	if (setStateFreq(handle, eigenInd, LCI->categWeightScratch) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setStateFreq");
 	    return 0L;
 	}
