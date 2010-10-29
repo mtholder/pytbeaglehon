@@ -178,11 +178,8 @@ class TogglePartialTreeScorer(TreeScorer):
             self._scheduler = None
         model.transmit_category_weights()
         model.transmit_state_freq()
-        self._LCE.integrate_likelihood(model, root_partials)
-        self._LCE.integrate_likelihood(model, root_partials)
         
-        self._LCE.integrate_likelihood(model, root_partials)
-        return 0.0
+        return self._LCE.integrate_likelihood(model, root_partials)
 
 
 def create_toggle_partial_tree_scorer(model_list, 
