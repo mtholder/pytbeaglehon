@@ -103,6 +103,15 @@ int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, 
 
 int setSingletonCategoryWeights(long handle, const int * indexList, const double *wtList, int numCateg);
 int setStateFreq(long handle, int bufferIndex, const double *freq);
+
+int calcRootLnL(long handle, 
+                const int * rootPartialIndex,
+                const int * categWeightIndex,
+                const int * stateFreqIndex, 
+                const int * rootRescalerIndex, 
+                int arrayLength,
+                double * lnL);
+
 #ifdef __cplusplus
 }
 /* end of extern c bit */

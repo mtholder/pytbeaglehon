@@ -116,6 +116,9 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
     inst->waitPartialIndexScratch = 0L;
     inst->categWeightIndexScratch = 0L;
     inst->categWeightScratch = 0L;
+    inst->rootPartialIndexScratch = 0L;
+    inst->stateFreqIndexScratch = 0L;
+    inst->rootRescalerIndexScratch = 0L;
 
 }
 
@@ -222,12 +225,23 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 		goto errorExit;
 	}
 	
-	/* this next two should not really be numEigenStorage long, but that is what beagle wants...*/
-    t->categWeightIndexScratch = (int *)malloc(t->numEigenStorage*sizeof(int));
+	/* this next two should not really be numEigenStorage long, but that is what beagle wants
+	   we make it 4 times too long so that we can use the array for:
+	    categWeightIndexScratch
+	    rootPartialIndexScratch
+	    stateFreqIndexScratch, and 
+	    rootRescalerIndexScratch
+    */
+    t->categWeightIndexScratch = (int *)malloc(4*t->numEigenStorage*sizeof(int));
 	if (t->categWeightIndexScratch == 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc categWeightIndexScratch in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
+    t->rootPartialIndexScratch = t->categWeightIndexScratch + (t->numEigenStorage);
+    t->stateFreqIndexScratch = t->categWeightIndexScratch + 2*(t->numEigenStorage);
+    t->rootRescalerIndexScratch = t->categWeightIndexScratch + 3*(t->numEigenStorage);
+
+	
 	doubleScratch = (t->numEigenStorage > t->numStates ? t->numEigenStorage : t->numStates);
     t->categWeightScratch = (double *)malloc(doubleScratch*sizeof(double));
 	if (t->categWeightScratch == 0) {
@@ -426,6 +440,9 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 	if (inst->categWeightIndexScratch)
 	    free(inst->categWeightIndexScratch);
 	inst->categWeightIndexScratch = 0L;
+    inst->rootPartialIndexScratch = 0L;
+    inst->stateFreqIndexScratch = 0L;
+    inst->rootRescalerIndexScratch = 0L;
 
 	if (inst->categWeightScratch)
 	    free(inst->categWeightScratch);
@@ -615,6 +632,32 @@ int setStateFreq(long handle, int bufferIndex, const double *freq) {
     return rc;
 }
 
+
+int calcRootLnL(long handle, 
+                const int * rootPartialIndex,
+                const int * categWeightIndex,
+                const int * stateFreqIndex, 
+                const int * rootRescalerIndex, 
+                int arrayLength,
+                double * lnL) {
+    struct LikeCalculatorInstance * lci;
+    int rc = BEAGLE_SUCCESS;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || arrayLength >= lci->numEigenStorage) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    rc = beagleCalculateRootLogLikelihoods(lci->beagleInstanceIndex,
+                                      rootPartialIndex,
+                                      categWeightIndex,
+                                      stateFreqIndex,
+                                      rootRescalerIndex,
+                                      arrayLength,
+                                      lnL);
+    if (rc != BEAGLE_SUCCESS) {
+        PYTBEAGLEHON_DEBUG_PRINTF("Error in beagleCalculateRootLogLikelihoods");
+    }
+    return rc;
+}
 
 
 

@@ -5,7 +5,7 @@ from pytbeaglehon.ccore.disc_state_cont_time_model import \
     cget_comp_resource_info, cget_model_list, cdsctm_set_q_mat, \
     cdsctm_calc_eigens, cdsctm_calc_pr_mats, cdsctm_get_pr_mats, \
     cdsctm_set_state_code, cdsctm_calc_partials, cdsctm_set_singleton_category_weights, \
-    cdsctm_set_state_freq
+    cdsctm_set_state_freq, cdsctm_calc_root_likelihood
 from pytbeaglehon import DiscStateContTimeModel
 from pytbeaglehon import get_logger, CachingFacets
 _LOG = get_logger(__name__)
@@ -163,6 +163,8 @@ class EigenSolutionWrapper(BufferWrapper):
             assert(model.state_hash == model_state_hash) # doublechecking
             self._model_hash = model_state_hash
 
+    def get_category_weight_index_list(self, n):
+        return tuple([self.index + i for i in range(n)])
     def transmit_category_weights(self, weights, weight_hash):
         assert(weight_hash is not None)
         if weight_hash == self._prev_transmitted_weights_hash:
@@ -171,7 +173,7 @@ class EigenSolutionWrapper(BufferWrapper):
         
         # TEMP this is a hack because we are always telling beagle that we have 
         #   one 
-        cw_indices = tuple([self.index + i for i in range(len(w))])
+        cw_indices = self.get_category_weight_index_list(len(w))
         cdsctm_set_singleton_category_weights(self.like_calc_env._handle, cw_indices, w)
         self._prev_transmitted_weights = w
         self._prev_transmitted_weights_hash = weight_hash
@@ -1010,7 +1012,30 @@ class LikeCalcEnvironment(object):
     def integrate_likelihood(self, model, root_partials):
         assert(self._incarnated)
         assert(model.num_rate_categories == len(root_partials))
-        
+        num_categories = len(root_partials)
+        asrv = model.asrv
+        if asrv is None:
+            assert(num_categories == 1)
+        else:
+            assert(num_categories == asrv.num_categories)
+        es_wrapper = model.eigen_soln
+        assert(es_wrapper is not None)
+        cat_weight_index_tuple = es_wrapper.get_category_weight_index_list(num_categories)
+        state_freq_index = es_wrapper.index
+        state_freq_index_tuple = tuple([state_freq_index] * num_categories)
+        rescalers = tuple([i.index for i in root_partials])
+        partial_ind_tuple = tuple([i.beagle_buffer_index for i in root_partials])
+        _LOG.debug("calling cdsctm_calc_root_likelihood(%d, %s, %s, %s, %s)" % (self._handle, 
+                                           repr(partial_ind_tuple),
+                                           repr(cat_weight_index_tuple),
+                                           repr(state_freq_index_tuple),
+                                           repr(rescalers)))
+        return cdsctm_calc_root_likelihood(self._handle, 
+                                           partial_ind_tuple,
+                                           cat_weight_index_tuple,
+                                           state_freq_index_tuple,
+                                           rescalers)
+
     def tree_scorer(self, tree, tree_scorer_class):
         if not self._incarnated:
             self._do_beagle_init()

@@ -55,6 +55,11 @@ struct LikeCalculatorInstance {
     int * waitPartialIndexScratch; /* numPartialStructs long */
     int * categWeightIndexScratch; /* numEigenStorage long */
     double * categWeightScratch; /* numEigenStorage long */
+    int * rootPartialIndexScratch; /* numEigenStorage long */
+    int * stateFreqIndexScratch; /* numEigenStorage long */
+    int * rootRescalerIndexScratch; /* numEigenStorage long */
+
+    
     
 };
 

@@ -379,8 +379,7 @@ PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr) {
 PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
 	long handle;
 	unsigned eigenInd;
-	unsigned indArraySize, weightTupleSize;
-    PyObject * indList = 0L;
+	unsigned weightTupleSize;
     PyObject * weightTuple = 0L;
     if (!PyArg_ParseTuple(args, "liO!", &handle, &eigenInd, &PyTuple_Type, &weightTuple))
         return 0L;
@@ -407,6 +406,60 @@ PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
 	return none();
 }
 
+
+
+PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
+	long handle;
+	unsigned indArraySize, i;
+	double lnL;
+    PyObject * rootPartialIndTuple = 0L;
+    PyObject * categWeightIndTuple = 0L;
+    PyObject * stateFreqIndTuple = 0L;
+    PyObject * rescalerIndTuple = 0L;
+    if (!PyArg_ParseTuple(args, "lO!O!O!O!", &handle, &PyTuple_Type, &rootPartialIndTuple, 
+                                                  &PyTuple_Type, &categWeightIndTuple, 
+                                                  &PyTuple_Type, &stateFreqIndTuple, 
+                                                  &PyTuple_Type, &rescalerIndTuple))
+        return 0L;
+    indArraySize = (unsigned) PyTuple_Size(rootPartialIndTuple);
+    i = (unsigned) PyTuple_Size(categWeightIndTuple);
+    if (indArraySize != i){
+        PyErr_SetString(PyExc_IndexError, "Expecting the number of root partials to equal the number of category weight buffer indices");
+        return 0L;
+    }
+    i = (unsigned) PyTuple_Size(stateFreqIndTuple);
+    if (indArraySize != i){
+        PyErr_SetString(PyExc_IndexError, "Expecting the number of root partials to equal the number of state frequency buffer indices");
+        return 0L;
+    }
+    i = (unsigned) PyTuple_Size(rescalerIndTuple);
+    if (indArraySize != i){
+        PyErr_SetString(PyExc_IndexError, "Expecting the number of root partials to equal the number of rescaler buffer indices");
+        return 0L;
+    }
+    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    if (LCI == 0L) {
+        PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
+        return 0L;
+    }
+    if (indArraySize > LCI->numEigenStorage) {
+        PyErr_SetString(PyExc_IndexError, "Oddly enough, the number of rate category weights has to be less than the number of eigen solution storage slots.");
+        return 0L;
+    }
+    if (tupleToUnsignedArray(rootPartialIndTuple, LCI->rootPartialIndexScratch, indArraySize) == 0L)
+        return 0L;
+    if (tupleToUnsignedArray(categWeightIndTuple, LCI->categWeightIndexScratch, indArraySize) == 0L)
+        return 0L;
+    if (tupleToUnsignedArray(stateFreqIndTuple, LCI->stateFreqIndexScratch, indArraySize) == 0L)
+        return 0L;
+    if (tupleToUnsignedArray(rescalerIndTuple, LCI->rootRescalerIndexScratch, indArraySize) == 0L)
+        return 0L;
+	if (calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, (int) indArraySize, &lnL) != 0) {
+        PyErr_SetString(PyExc_ValueError, "Error calling calcRootLnL");
+	    return 0L;
+	}
+	return none();
+}
 
 
 PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {

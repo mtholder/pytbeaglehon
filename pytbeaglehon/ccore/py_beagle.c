@@ -134,6 +134,9 @@ static PyMethodDef dsct_model_module_functions[] = {
 		"Takes a handle, tuple of indices and a tuple of weights.  Puts one weight in each category weight slot"},
 	{"cdsctm_set_state_freq", pySetStateFreq, METH_VARARGS,
 		"Takes a handle, an eigen solution index and a tuple of state frequencies."},
+
+	{"cdsctm_calc_root_likelihood", pyCalcRootLnLikelihood, METH_VARARGS,
+		"Takes a handle, tuple of root partials, tuple of category weight indices, tuple of state freq indices, tuple of rescaler indices."},
     
     
 	{"casrvo_ctor", casrvo_ctor, METH_VARARGS,

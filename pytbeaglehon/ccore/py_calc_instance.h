@@ -20,6 +20,7 @@ PyObject* pySetStateCodeArray(PyObject *self, PyObject *args);
 PyObject* pyCalcPartials(PyObject *self, PyObject *args);
 PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args);
 PyObject* pySetStateFreq(PyObject *self, PyObject *args);
+PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args);
 
 #ifdef __cplusplus
 }
