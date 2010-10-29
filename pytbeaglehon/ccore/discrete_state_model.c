@@ -31,11 +31,55 @@ void cdsctm_dtor(DSCTModelObj* dsct_model);
 #endif
 
 
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int maxNumModelsInTraceMode = 100;
+        DSCTModelObj ** gModelArray = 0L;
+        int gCurrModel = 0;
+        int getTraceModeModelIndex(DSCTModelObj * m) {
+            int i;
+            if (gModelArray == 0L)
+                return -1;
+            for (i = 0; i < maxNumModelsInTraceMode; ++ i) {
+                if (gModelArray[i] == m)
+                    return i;
+            }
+            return -1;
+        }
+
+
+        EigenSolutionStruct ** gESSArray = 0L;
+        int gCurrESS = 0;
+        int getTraceModeESSIndex(EigenSolutionStruct * m) {
+            int i;
+            if (gESSArray == 0L)
+                return -1;
+            for (i = 0; i < maxNumModelsInTraceMode; ++ i) {
+                if (gESSArray[i] == m)
+                    return i;
+            }
+            return -1;
+        }
+
+#   endif
 
 DSCTModelObj * dsctModelNew(unsigned dim)  {
 	assert(dim > 1);
 	DSCTModelObj * dsct_model = PyObject_New(DSCTModelObj, &dsct_model_type);
 	PYTBEAGLEHON_DEBUG_PRINTF1("In dsctModelNew. Allocated address = %ld\n", (long) dsct_model);
+
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        if (gModelArray == 0L) {
+            gModelArray = (DSCTModelObj **)malloc(maxNumModelsInTraceMode*sizeof(DSCTModelObj *));
+            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ DSCTModelObj * dsct_model_obj = 0L;\n");
+        }
+        if (gCurrModel + 1 >= maxNumModelsInTraceMode) {
+            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ NUMBER of models in trace mode exceeded!!!\n");
+            gCurrModel = maxNumModelsInTraceMode - 1;
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ DSCTModelObj * modObj%d = dsctModelNew(%u);\n", gCurrModel, dim);
+        gModelArray[gCurrModel++] = dsct_model;
+#   endif
+
 	if (dsct_model) {
 		dsct_model->dim = dim;
 		dsct_model->eigenBufferIndex = -1;

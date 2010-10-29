@@ -6,6 +6,18 @@
 #include "internal_like_calc_env.h"
 
 
+BeagleOperation partialOperation(int destPartial, int outRescaler, int inRescaler, int leftPartial, int leftPrMat, int rightPartial, int rightPrMat) {
+    BeagleOperation BOp;
+    BOp.destinationPartials = destPartial;
+	BOp.destinationScaleWrite = outRescaler;
+	BOp.destinationScaleRead = inRescaler;
+	BOp.child1Partials = leftPartial;
+	BOp.child1TransitionMatrix = leftPrMat;
+	BOp.child2Partials = rightPartial;
+	BOp.child2TransitionMatrix = rightPrMat ; 
+	return BOp;
+}
+
 #if !defined(BUILDING_FOR_PYTHON)
     void PyErr_NoMemory() {
         PYTBEAGLEHON_DEBUG_PRINTF("PyErr_NoMemory");

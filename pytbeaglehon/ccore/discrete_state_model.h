@@ -53,6 +53,13 @@ const DSCTModelObj ** getModelList(long instanceHandle, unsigned int *numModels)
 
 int recalc_eigen_mat(DSCTModelObj *mod);
 
+
+#if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int getTraceModeModelIndex(DSCTModelObj * m);
+        int getTraceModeESSIndex(EigenSolutionStruct * m);
+#endif
+
+
 #ifdef __cplusplus
 }
 /* end of extern c bit */

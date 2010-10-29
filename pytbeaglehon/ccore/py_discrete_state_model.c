@@ -20,6 +20,7 @@ PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
 	
 	to_return = tupleToDoubleMatrix(tuple_obj, dsct_model_obj->qMat, dim, dim, 1);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = modObj%d;\n", getTraceModeModelIndex(dsct_model_obj));
     	if (dim == 4) {
             PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[0][0] = %lf; dsct_model_obj->qMat[0][1] = %lf; dsct_model_obj->qMat[0][2] = %lf; dsct_model_obj->qMat[0][3] = %lf;\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
             PYTBEAGLEHON_DEBUG_PRINTF4("                dsct_model_obj->qMat[1][0] = %lf; dsct_model_obj->qMat[1][1] = %lf; dsct_model_obj->qMat[1][2] = %lf; dsct_model_obj->qMat[1][3] = %lf;\n", dsct_model_obj->qMat[1][0], dsct_model_obj->qMat[1][1], dsct_model_obj->qMat[1][2], dsct_model_obj->qMat[1][3]);
@@ -117,15 +118,15 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
 		PyErr_SetString(PyExc_IndexError, "edge length list and prob mat index list must be the same length");
 	}
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-	    PYTBEAGLEHON_DEBUG_PRINTF3("/* cAPI Call */ calcPrMats(handle=%ld, eigenIndex=%d, numToCalc=%ud, edgeLen={", handle, eigenIndex, numToCalc);
+	    PYTBEAGLEHON_DEBUG_PRINTF3("/* cAPI Call */ handle=%ld; eigenIndex=%d; numToCalc=%u;", handle, eigenIndex, numToCalc);
 	    for (i = 0; i < numToCalc; ++i) {
-    	    PYTBEAGLEHON_DEBUG_PRINTF1("%lf, ", lci->edgeLenScratch[i]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("edgeLen[%d] = %lf; ", i, lci->edgeLenScratch[i]);
         }
-	    PYTBEAGLEHON_DEBUG_PRINTF("}, probMatIndex={");
+	    PYTBEAGLEHON_DEBUG_PRINTF(";\n/* cAPI Call */ ");
 	    for (i = 0; i < numToCalc; ++i) {
-    	    PYTBEAGLEHON_DEBUG_PRINTF1("%lf, ", lci->edgeLenScratch[i]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("probMatIndexScratch[%d] = %d; ", i, lci->probMatIndexScratch[i]);
         }
-	    PYTBEAGLEHON_DEBUG_PRINTF("});\n");
+	    PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ calcPrMats(handle, eigenIndex, numToCalc, edgeLen, probMatIndexScratch);\n");
 #   endif
 	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
 	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");

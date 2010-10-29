@@ -8,7 +8,7 @@ check-local: testfatbeagle
 	$(abs_top_builddir)/c_example/testfatbeagle -v
 
 
-testtrace_SOURCES = testtrace.c
+testtrace_SOURCES = tracetest.c
 testtrace_CPPFLAGS = $(AM_CPPFLAGS)
 
 check-local: testtrace

@@ -101,6 +101,7 @@ int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_co
 */
 int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, const int * waitPartialIndexList, int numPartialsToWaitFor);
 
+BeagleOperation partialOperation(int destPartial, int outRescaler, int inRescaler, int leftPartial, int leftPrMat, int rightPartial, int rightPrMat);
 int setSingletonCategoryWeights(long handle, const int * indexList, const double *wtList, int numCateg);
 int setStateFreq(long handle, int bufferIndex, const double *freq);
 

@@ -10,20 +10,6 @@
 
 PyObject * tupleToOpCode(PyObject *tuple_obj, BeagleOperation * opPtr);
 
-PyObject* cPytBeagleHonFree(PyObject *self, PyObject *args) {
-	long handle;
-	if (!PyArg_ParseTuple(args, "l", &handle)) {
-		return 0L;
-	}
-#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ freeLikeCalculatorInstance(handle);\n");
-#   endif
-	if (freeLikeCalculatorInstance(handle) != 0) {
-		PyErr_SetString(PyExc_ValueError, "Error freeing calculation instance");
-		return 0L;
-	}
-	return none();
-}
 PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 	int numLeaves;
 	long numPatterns;
@@ -187,11 +173,15 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
                 }
             }
         }
-    	PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ int numLeaves=%d; long numPatterns=%ld ; long patternWeights=%ld; int numStates=%d,",  numLeaves, numPatterns, (long) patternWeights, numStates);
+        if (patternWeights) {
+            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ need to create some pattern weights here ;\n");
+        }
+    	PYTBEAGLEHON_DEBUG_PRINTF3("/* cAPI Call */ int numLeaves=%d; long numPatterns=%ld ; const double * patternWeights=0L; int numStates=%d;",  numLeaves, numPatterns, numStates);
 	    PYTBEAGLEHON_DEBUG_PRINTF3("int numStateCodeArrays=%d; int numPartialStructs=%d; int numInstRateModels=%d ; const ASRVObj ** asrvObjectArray=0L;",  numStateCodeArrays, numPartialStructs, numInstRateModels);
     	PYTBEAGLEHON_DEBUG_PRINTF4("int numProbMats=%d; int numEigenStorage=%d; int numRescalingsMultipliers=%d; int resourceIndex=%d; ",  numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex);
 	    PYTBEAGLEHON_DEBUG_PRINTF2("long resourcePref=%ld; long resourceReq=%ld;\n", resourcePref, resourceReq);
     	PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ long handle = createLikelihoodCalcInstance(numLeaves, numPatterns, patternWeights, numStates, numStateCodeArrays, numPartialStructs, numInstRateModels, asrvObjectArray, numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex, resourcePref, resourceReq);\n");
+    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld);\n", handle);
 #   endif
 	handle = createLikelihoodCalcInstance(
 	        numLeaves,
@@ -229,6 +219,21 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 	    return 0L;
 }
 
+
+PyObject* cPytBeagleHonFree(PyObject *self, PyObject *args) {
+	long handle;
+	if (!PyArg_ParseTuple(args, "l", &handle)) {
+		return 0L;
+	}
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ freeLikeCalculatorInstance(handle);\n");
+#   endif
+	if (freeLikeCalculatorInstance(handle) != 0) {
+		PyErr_SetString(PyExc_ValueError, "Error freeing calculation instance");
+		return 0L;
+	}
+	return none();
+}
 
 PyObject* pyGetNumComputationalResources(PyObject *self, PyObject *args) {
 	unsigned numResources = getNumComputationalResources();
@@ -302,11 +307,13 @@ PyObject* pySetStateCodeArray(PyObject *self, PyObject *args) {
         return 0L;
 
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ setStateCodeArray(handle, %d, {", stateCodeArrayIndex);
-        for (i = 0; i < LCI->numPatterns; ++i) {
-            PYTBEAGLEHON_DEBUG_PRINTF1("%d, ", LCI->stateCodeArrayScratch[i]);
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ handle = %ld; int scarr%d[] = {", handle, stateCodeArrayIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF1("%d", LCI->stateCodeArrayScratch[0]);
+        for (i = 1; i < LCI->numPatterns; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF1(", %d", LCI->stateCodeArrayScratch[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF("});");
+        PYTBEAGLEHON_DEBUG_PRINTF("};\n");
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ setStateCodeArray(handle, %d, scarr%d);\n", stateCodeArrayIndex, stateCodeArrayIndex);
 #   endif
         
     if (setStateCodeArray(handle, stateCodeArrayIndex, LCI->stateCodeArrayScratch) != 0) {
@@ -366,22 +373,21 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
 	tupleToUnsignedArrayMaxSize(waitTuple, LCI->waitPartialIndexScratch, LCI->numPartialStructs, &waitTupleSize);
 
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ calcPartials(handle, {");
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ handle = %ld; ", handle);
         for (i = 0; i < opArraySize; ++i) {
             bo = LCI->opScratch + i;
-            PYTBEAGLEHON_DEBUG_PRINTF4("partialOperation(%d, %d, %d, %d, ", bo->destinationPartials, bo->destinationScaleWrite, bo->destinationScaleRead, bo->child1Partials);
-            PYTBEAGLEHON_DEBUG_PRINTF3("%d, %d, %d), ", bo->child1TransitionMatrix, bo->child2Partials, bo->child2TransitionMatrix);
+            PYTBEAGLEHON_DEBUG_PRINTF4("opScratch[%d] = partialOperation(%d, %d, %d, ", i,  bo->destinationPartials, bo->destinationScaleWrite, bo->destinationScaleRead);
+            PYTBEAGLEHON_DEBUG_PRINTF4("%d, %d, %d, %d); ", bo->child1Partials, bo->child1TransitionMatrix, bo->child2Partials, bo->child2TransitionMatrix);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF1("}, %d, ", opArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ ");
         if (waitTupleSize < 1) {
-            PYTBEAGLEHON_DEBUG_PRINTF("0L, -1);\n");
+            PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ calcPartials(handle, opScratch, %d, 0, -1);\n", opArraySize);
         }
         else {
-            PYTBEAGLEHON_DEBUG_PRINTF("{");
             for (i = 0; i < waitTupleSize; ++i) {
-                PYTBEAGLEHON_DEBUG_PRINTF1("%d", LCI->waitPartialIndexScratch[i]);
+                PYTBEAGLEHON_DEBUG_PRINTF2("waitPartialIndexScratch[%d] = %d; ", i, LCI->waitPartialIndexScratch[i]);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF1("}, %d);\n", waitTupleSize);
+            PYTBEAGLEHON_DEBUG_PRINTF2("\n/* cAPI Call */ calcPartials(handle, opScratch, %d, waitPartialIndexScratch, %d);\n", opArraySize, waitTupleSize);
         }
 #   endif
 
@@ -541,6 +547,17 @@ PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {
         return 0L;
     if (tupleToDoubleArray(weightTuple, LCI->categWeightScratch, indArraySize, 1) == 0L)
         return 0L;
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int i;
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ handle = %ld; ", handle);
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("categWeightIndexScratch[%d] = %d; ", i,  LCI->categWeightIndexScratch[i]);
+        }
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ setSingletonCategoryWeights(handle, categWeightIndexScratch, categWeightScratch, %d);\n", (int) indArraySize);
+#   endif
 	if (setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, (int) indArraySize) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setSingletonCategoryWeights");
 	    return 0L;
