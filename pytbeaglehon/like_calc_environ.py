@@ -164,7 +164,10 @@ class EigenSolutionWrapper(BufferWrapper):
             self._model_hash = model_state_hash
 
     def get_category_weight_index_list(self, n):
-        return tuple([self.index + i for i in range(n)])
+        t = tuple([self.index + i for i in range(n)])
+        _LOG.debug("%s.get_category_weight_index_list(%d) = %s" % (str(self), n, str(t)))
+        return t
+
     def transmit_category_weights(self, weights, weight_hash):
         assert(weight_hash is not None)
         if weight_hash == self._prev_transmitted_weights_hash:
@@ -435,6 +438,10 @@ class CalculatedCache(object):
         o.set_calculated()
         n = self._saved.setdefault(o, 0)
         self._saved[o] = (n + 1)
+        try:
+            self._state_to_wrapper[o.state_hash] = o
+        except:
+            pass
 
     def get_writable_object(self, o=None):
         '''Returns a free object, and "tells" the wrapper to clear itself.
@@ -453,6 +460,10 @@ class CalculatedCache(object):
                     o = self._calculated.pop()
                 except KeyError:
                     raise ValueError("All %s instances are locked" % self.obj_name)
+            try:
+                del self._state_to_wrapper[o.state_hash]
+            except:
+                pass
             o.clear()
             self._queued.add(o)
         else:
@@ -465,19 +476,20 @@ class CalculatedCache(object):
         o.set_calculated()
         self._queued.discard(o)
         self._calculated.add(o)
-
-    def save_obj(self, o):
-        assert(o in self._queued)
-        assert(o not in self._saved)
-        o.set_calculated()
-        self._queued.discard(o)
-        self._saved[o] = 1
+        try:
+            self._state_to_wrapper[o.state_hash] = o
+        except:
+            pass
 
     def release(self, o):
         assert(o in self._queued)
         assert(o not in self._free)
         self._queued.discard(o)
         self._free.add(o)
+        try:
+            del self._state_to_wrapper[o.state_hash]
+        except:
+            pass
 
     def make_writable(self, o):
         r = self._saved.get(o)
@@ -490,6 +502,10 @@ class CalculatedCache(object):
             del self._saved[o]
         else:
             return self.get_writable_object()
+        try:
+            del self._state_to_wrapper[o.state_hash]
+        except:
+            pass
         o.clear()
         self._queued.add(o)
         return o

@@ -549,7 +549,7 @@ PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_ValueError, "Error calling calcRootLnL");
 	    return 0L;
 	}
-	return none();
+	return PyFloat_FromDouble(lnL);
 }
 
 

@@ -168,6 +168,7 @@ class TogglePartialTreeScorer(TreeScorer):
     def _calc_full_traversal_lnL_for_model(self, model):
         assert(self._scheduler is None)
         from pytbeaglehon.op_scheduling import TogglePartialScheduler
+        es = model.eigen_soln
         self._scheduler = TogglePartialScheduler(self, model)
         try:
             for node in self._tree.postorder_internal_node_iter():
@@ -178,7 +179,7 @@ class TogglePartialTreeScorer(TreeScorer):
             self._scheduler = None
         model.transmit_category_weights()
         model.transmit_state_freq()
-        
+        assert (es is model.eigen_soln)
         return self._LCE.integrate_likelihood(model, root_partials)
 
 
