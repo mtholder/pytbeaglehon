@@ -111,8 +111,7 @@ int calcRootLnL(long handle,
                 const int * stateFreqIndex, 
                 const int * rootRescalerIndex, 
                 int arrayLength,
-                double * lnL);
-
+                double * lnL) ;
 #ifdef __cplusplus
 }
 /* end of extern c bit */

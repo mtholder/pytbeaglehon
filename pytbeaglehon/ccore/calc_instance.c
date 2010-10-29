@@ -674,6 +674,22 @@ int calcRootLnL(long handle,
 
 
 
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int getTraceModeModelIndex(struct LikeCalculatorInstance * LCI, DSCTModelObj * m) {
+            int i;
+            if (LCI == 0L || LCI->probModelArray == 0L)
+                return -1;
+            for (i = 0; i < LCI->numInstRateModels; ++ i) {
+                if (LCI->probModelArray[i] == m)
+                    return i;
+            }
+            return -1;
+        }
+
+
+#   endif
+
+
 /**
   pytbeaglehon phylogenetic likelihood caluclations using beaglelib.
 

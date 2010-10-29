@@ -20,7 +20,8 @@ PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
 	
 	to_return = tupleToDoubleMatrix(tuple_obj, dsct_model_obj->qMat, dim, dim, 1);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = modObj%d;\n", getTraceModeModelIndex(dsct_model_obj));
+        struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = LCI->probModelArray[%d];\n", getTraceModeModelIndex(LCI, dsct_model_obj));
     	if (dim == 4) {
             PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[0][0] = %lf; dsct_model_obj->qMat[0][1] = %lf; dsct_model_obj->qMat[0][2] = %lf; dsct_model_obj->qMat[0][3] = %lf;\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
             PYTBEAGLEHON_DEBUG_PRINTF4("                dsct_model_obj->qMat[1][0] = %lf; dsct_model_obj->qMat[1][1] = %lf; dsct_model_obj->qMat[1][2] = %lf; dsct_model_obj->qMat[1][3] = %lf;\n", dsct_model_obj->qMat[1][0], dsct_model_obj->qMat[1][1], dsct_model_obj->qMat[1][2], dsct_model_obj->qMat[1][3]);
@@ -42,6 +43,8 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 		return 0L;
 	dsct_model_obj = (DSCTModelObj *)(dsct_model_py_obj);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = LCI->probModelArray[%d];\n", getTraceModeModelIndex(LCI, dsct_model_obj));
     	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj->eigenBufferIndex=%d; dsct_model_obj->eigenCalcIsDirty = 1; recalc_eigen_mat(dsct_model_obj);\n", eigenIndex);
 #   endif
 	dsct_model_obj->eigenBufferIndex = eigenIndex;
@@ -92,6 +95,7 @@ PyObject* cdsctm_get_pr_mats(PyObject *self, PyObject *args) {
         Py_DECREF(lp);
         return 0L;
 }
+
 PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
 #   if defined(DEBUG_PRINTING) && DEBUG_PRINTING
         unsigned i;
@@ -120,13 +124,13 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
 	    PYTBEAGLEHON_DEBUG_PRINTF3("/* cAPI Call */ handle=%ld; eigenIndex=%d; numToCalc=%u;", handle, eigenIndex, numToCalc);
 	    for (i = 0; i < numToCalc; ++i) {
-    	    PYTBEAGLEHON_DEBUG_PRINTF2("edgeLen[%d] = %lf; ", i, lci->edgeLenScratch[i]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("LCI->edgeLenScratch[%d] = %lf; ", i, lci->edgeLenScratch[i]);
         }
 	    PYTBEAGLEHON_DEBUG_PRINTF(";\n/* cAPI Call */ ");
 	    for (i = 0; i < numToCalc; ++i) {
-    	    PYTBEAGLEHON_DEBUG_PRINTF2("probMatIndexScratch[%d] = %d; ", i, lci->probMatIndexScratch[i]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("LCI->probMatIndexScratch[%d] = %d; ", i, lci->probMatIndexScratch[i]);
         }
-	    PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ calcPrMats(handle, eigenIndex, numToCalc, edgeLen, probMatIndexScratch);\n");
+	    PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ calcPrMats(handle, eigenIndex, numToCalc, LCI->edgeLenScratch, LCI->probMatIndexScratch);\n");
 #   endif
 	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
 	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");

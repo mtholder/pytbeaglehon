@@ -165,7 +165,26 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
     resourceReq ^= BEAGLE_FLAG_SCALING_DYNAMIC;
 	resourceReq |= BEAGLE_FLAG_SCALING_ALWAYS;
 	
+	handle = createLikelihoodCalcInstance(
+	        numLeaves,
+            numPatterns,
+            patternWeights,
+            numStates,
+            numStateCodeArrays,
+            numPartialStructs,
+            numInstRateModels,
+            (const ASRVObj **) asrvObjectArray,
+            numProbMats,
+            numEigenStorage,
+            numRescalingsMultipliers,
+            resourceIndex,
+            resourcePref,
+            resourceReq);
+
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        if (handle > 0) {
+            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ handle=0 is assumed in tracing code! ;\n");
+        }
         if (asrvObjectArray != 0L) {
             for (i = 0; i < numInstRateModels; ++i) {
                 if (asrvObjectArray[i] != 0L) {
@@ -183,21 +202,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
     	PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ long handle = createLikelihoodCalcInstance(numLeaves, numPatterns, patternWeights, numStates, numStateCodeArrays, numPartialStructs, numInstRateModels, asrvObjectArray, numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex, resourcePref, resourceReq);\n");
     	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld);\n", handle);
 #   endif
-	handle = createLikelihoodCalcInstance(
-	        numLeaves,
-            numPatterns,
-            patternWeights,
-            numStates,
-            numStateCodeArrays,
-            numPartialStructs,
-            numInstRateModels,
-            (const ASRVObj **) asrvObjectArray,
-            numProbMats,
-            numEigenStorage,
-            numRescalingsMultipliers,
-            resourceIndex,
-            resourcePref,
-            resourceReq);
+
 	if (handle < 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not allocate likelihood_calculator_instance\n");
 		PyErr_NoMemory();
@@ -376,18 +381,18 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
         PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ handle = %ld; ", handle);
         for (i = 0; i < opArraySize; ++i) {
             bo = LCI->opScratch + i;
-            PYTBEAGLEHON_DEBUG_PRINTF4("opScratch[%d] = partialOperation(%d, %d, %d, ", i,  bo->destinationPartials, bo->destinationScaleWrite, bo->destinationScaleRead);
+            PYTBEAGLEHON_DEBUG_PRINTF4("LCI->opScratch[%d] = partialOperation(%d, %d, %d, ", i,  bo->destinationPartials, bo->destinationScaleWrite, bo->destinationScaleRead);
             PYTBEAGLEHON_DEBUG_PRINTF4("%d, %d, %d, %d); ", bo->child1Partials, bo->child1TransitionMatrix, bo->child2Partials, bo->child2TransitionMatrix);
         }
         PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ ");
         if (waitTupleSize < 1) {
-            PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ calcPartials(handle, opScratch, %d, 0, -1);\n", opArraySize);
+            PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ calcPartials(handle, LCI->opScratch, %d, 0, -1);\n", opArraySize);
         }
         else {
             for (i = 0; i < waitTupleSize; ++i) {
-                PYTBEAGLEHON_DEBUG_PRINTF2("waitPartialIndexScratch[%d] = %d; ", i, LCI->waitPartialIndexScratch[i]);
+                PYTBEAGLEHON_DEBUG_PRINTF2("LCI->waitPartialIndexScratch[%d] = %d; ", i, LCI->waitPartialIndexScratch[i]);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF2("\n/* cAPI Call */ calcPartials(handle, opScratch, %d, waitPartialIndexScratch, %d);\n", opArraySize, waitTupleSize);
+            PYTBEAGLEHON_DEBUG_PRINTF2("\n/* cAPI Call */ calcPartials(handle, LCI->opScratch, %d, LCI->waitPartialIndexScratch, %d);\n", opArraySize, waitTupleSize);
         }
 #   endif
 
@@ -458,6 +463,14 @@ PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
     }
     if (tupleToDoubleArray(weightTuple, LCI->categWeightScratch, weightTupleSize, 1) == 0L)
         return 0L;
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int i;
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ handle = %ld; eigenIndex = %d; ", handle, eigenInd);
+        for (i = 0; i < weightTupleSize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ setStateFreq(handle, eigenIndex, LCI->categWeightScratch);\n");
+#   endif
 	if (setStateFreq(handle, eigenInd, LCI->categWeightScratch) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setStateFreq");
 	    return 0L;
@@ -513,6 +526,25 @@ PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
         return 0L;
     if (tupleToUnsignedArray(rescalerIndTuple, LCI->rootRescalerIndexScratch, indArraySize) == 0L)
         return 0L;
+#   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ ");
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->rootPartialIndexScratch[%d] = %d; ", i,  LCI->rootPartialIndexScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ ");
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightIndexScratch[%d] = %d; ", i,  LCI->categWeightIndexScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ ");
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->stateFreqIndexScratch[%d] = %d; ", i,  LCI->stateFreqIndexScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ ");
+        for (i = 0; i < indArraySize; ++i) {
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->rootRescalerIndexScratch[%d] = %d; ", i,  LCI->rootRescalerIndexScratch[i]);
+        }
+        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, %d, &lnL);\n", indArraySize);
+#   endif
 	if (calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, (int) indArraySize, &lnL) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling calcRootLnL");
 	    return 0L;
@@ -551,12 +583,12 @@ PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {
         int i;
         PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ handle = %ld; ", handle);
         for (i = 0; i < indArraySize; ++i) {
-            PYTBEAGLEHON_DEBUG_PRINTF2("categWeightIndexScratch[%d] = %d; ", i,  LCI->categWeightIndexScratch[i]);
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightIndexScratch[%d] = %d; ", i,  LCI->categWeightIndexScratch[i]);
         }
         for (i = 0; i < indArraySize; ++i) {
-            PYTBEAGLEHON_DEBUG_PRINTF2("categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ setSingletonCategoryWeights(handle, categWeightIndexScratch, categWeightScratch, %d);\n", (int) indArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, %d);\n", (int) indArraySize);
 #   endif
 	if (setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, (int) indArraySize) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setSingletonCategoryWeights");

@@ -66,6 +66,9 @@ struct LikeCalculatorInstance {
 
 struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
 
+#if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
+        int getTraceModeModelIndex(struct LikeCalculatorInstance * LCI, DSCTModelObj * m);
+#endif 
 
 
 #ifdef __cplusplus
