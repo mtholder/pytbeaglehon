@@ -121,6 +121,7 @@ library_dirs = []
 libraries = []
 preprocessor_defines =[("DEBUG_PRINTING", kDebugPrint),
                        ("API_TRACE_PRINTING", kTracePrint),
+                       ("BEAGLE_API_TRACE_PRINTING", kTracePrint),
                        ("BUILDING_FOR_PYTHON", 1),
                        ("HAVE_INLINE", have_inline),
                        ("HAVE_NCL", have_ncl)

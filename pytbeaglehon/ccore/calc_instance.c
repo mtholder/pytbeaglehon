@@ -6,6 +6,114 @@
 #include "internal_like_calc_env.h"
 
 
+char * convertBeagleEnumToCString(long beagleFlags, char * buffer) {
+    if (buffer == 0L)
+        return 0L;
+    buffer[0] = '\0';
+    if (beagleFlags & BEAGLE_FLAG_PRECISION_SINGLE) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PRECISION_SINGLE");
+    }
+    if (beagleFlags & BEAGLE_FLAG_PRECISION_DOUBLE) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PRECISION_DOUBLE");
+    }
+    if (beagleFlags & BEAGLE_FLAG_COMPUTATION_SYNCH) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_COMPUTATION_SYNCH");
+    }
+    if (beagleFlags & BEAGLE_FLAG_COMPUTATION_ASYNCH) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_COMPUTATION_ASYNCH");
+    }
+    if (beagleFlags & BEAGLE_FLAG_EIGEN_REAL) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_EIGEN_REAL");
+    }
+    if (beagleFlags & BEAGLE_FLAG_EIGEN_COMPLEX) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_EIGEN_COMPLEX");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALING_MANUAL) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALING_MANUAL");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALING_AUTO) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALING_AUTO");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALING_ALWAYS) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALING_ALWAYS");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALING_DYNAMIC) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALING_DYNAMIC");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALERS_RAW) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALERS_RAW");
+    }
+    if (beagleFlags & BEAGLE_FLAG_SCALERS_LOG) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_SCALERS_LOG");
+    }
+    if (beagleFlags & BEAGLE_FLAG_VECTOR_SSE) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_VECTOR_SSE");
+    }
+    if (beagleFlags & BEAGLE_FLAG_VECTOR_NONE) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_VECTOR_NONE");
+    }
+    if (beagleFlags & BEAGLE_FLAG_THREADING_OPENMP) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_THREADING_OPENMP");
+    }
+    if (beagleFlags & BEAGLE_FLAG_THREADING_NONE) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_THREADING_NONE");
+    }
+    if (beagleFlags & BEAGLE_FLAG_PROCESSOR_CPU) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PROCESSOR_CPU");
+    }
+    if (beagleFlags & BEAGLE_FLAG_PROCESSOR_GPU) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PROCESSOR_GPU");
+    }
+    if (beagleFlags & BEAGLE_FLAG_PROCESSOR_FPGA) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PROCESSOR_FPGA");
+    }
+    if (beagleFlags & BEAGLE_FLAG_PROCESSOR_CELL) {
+        if (buffer[0] != '\0')
+            strcat(buffer, " | ");
+        strcat(buffer, "BEAGLE_FLAG_PROCESSOR_CELL");
+    }
+    return buffer;
+}
+
+
 BeagleOperation partialOperation(int destPartial, int outRescaler, int inRescaler, int leftPartial, int leftPrMat, int rightPartial, int rightPrMat) {
     BeagleOperation BOp;
     BOp.destinationPartials = destPartial;
@@ -137,7 +245,7 @@ void zeroLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
 /* returns 0 if memory allocation fails */
 long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASRVObj ** asrvAliasForEachModel) {
 	unsigned int i;
-	int doubleScratch;
+	int doubleScratch, rc;
 	int * resourceListPtr = 0L;
 	int resourceListLen = 0;
 	unsigned numRateCategoriesOnBeagle = 1;
@@ -276,7 +384,16 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     }
     
     BeagleInstanceDetails beagleInstanceDetails;
-    t->beagleInstanceIndex = beagleCreateInstance(t->numLeaves,
+#   if defined(BEAGLE_API_TRACE_PRINTING) && BEAGLE_API_TRACE_PRINTING
+        PYTBEAGLEHON_DEBUG_PRINTF("/* BEAGLE_API Call */ resourceIndex = %d;\n", t->resourceIndex);
+        char prefStr[1000];
+        char reqStr[1000];
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ resourcePref = %s ;\n/* BEAGLE_API Call */ resourcePref = %s ; \n", convertBeagleEnumToCString(t->resourcePref, prefStr), convertBeagleEnumToCString(t->resourceReq, reqStr));
+        PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ rc = beagleCreateInstance(%d, %d, %d, %d", t->numLeaves, t->numPartialStructs, t->numStateCodeArrays, t->numStates);
+        PYTBEAGLEHON_DEBUG_PRINTF4(", %ld, %d, %d, 1, %d, &resourceIndex, 1, resourcePref, resourceReq, &beagleInstanceDetails);\n", t->numPatterns, t->numEigenStorage, t->numProbMats, t->numRescalingsMultipliers);
+#   endif
+    
+    rc = beagleCreateInstance(t->numLeaves,
                                                   t->numPartialStructs,
                                                   t->numStateCodeArrays,
                                                   t->numStates,
@@ -290,6 +407,11 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->resourcePref,
                                                   t->resourceReq,
                                                   &beagleInstanceDetails);
+    if (rc != BEAGLE_SUCCESS) {
+		PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance failed with error code %d\n", rc);
+		goto errorExit;
+    }
+    t->beagleInstanceIndex = rc;
 	t->beagleInstanceCreated = 1;
     if (numRateCategoriesOnBeagle == 1)
         beagleSetCategoryRates(t->beagleInstanceIndex, &rateOfOne);

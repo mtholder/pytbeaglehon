@@ -112,6 +112,10 @@ int calcRootLnL(long handle,
                 const int * rootRescalerIndex, 
                 int arrayLength,
                 double * lnL) ;
+                
+                
+/* buffer must be at least 580 characters long. the buffer is returned */
+char * convertBeagleEnumToCString(long beagleFlags, char * buffer);
 #ifdef __cplusplus
 }
 /* end of extern c bit */
