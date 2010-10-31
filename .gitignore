@@ -10,3 +10,5 @@ configure
 config.guess
 aclocal.m4
 autom4te.cache
+c_example/real_beagletrace.c
+c_example/real_pytbeaglehontrace.c
