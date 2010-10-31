@@ -1,0 +1,338 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2D6B0292127BC78800E04AA4 /* asrv.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D6B028E127BC78800E04AA4 /* asrv.c */; };
+		2D6B0293127BC78800E04AA4 /* calc_instance.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D6B028F127BC78800E04AA4 /* calc_instance.c */; };
+		2D6B0294127BC78800E04AA4 /* discrete_state_model.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D6B0290127BC78800E04AA4 /* discrete_state_model.c */; };
+		2D6B0295127BC78800E04AA4 /* phylo_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D6B0291127BC78800E04AA4 /* phylo_util.c */; };
+		2D6B029D127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D6B029C127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib */; };
+		2DC7EC9A127C7F6000DA39AE /* real_pytbeaglehontrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DC7EC99127C7F6000DA39AE /* real_pytbeaglehontrace.c */; };
+		2DC7ECA8127C7F7600DA39AE /* libhmsbeagle-1.0.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D6B029C127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib */; };
+		2DC7ECAA127C7F7600DA39AE /* xcodepytbeaglehon.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6859E8B029090EE04C91782 /* xcodepytbeaglehon.1 */; };
+		2DC7ECB1127C7FAB00DA39AE /* real_beagletrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DC7ECB0127C7FAB00DA39AE /* real_beagletrace.c */; };
+		8DD76F6A0486A84900D96B5E /* xcodepytbeaglehon.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6859E8B029090EE04C91782 /* xcodepytbeaglehon.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2DC7ECA9127C7F7600DA39AE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				2DC7ECAA127C7F7600DA39AE /* xcodepytbeaglehon.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		8DD76F690486A84900D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				8DD76F6A0486A84900D96B5E /* xcodepytbeaglehon.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2D6B028E127BC78800E04AA4 /* asrv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = asrv.c; path = ../pytbeaglehon/ccore/asrv.c; sourceTree = SOURCE_ROOT; };
+		2D6B028F127BC78800E04AA4 /* calc_instance.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = calc_instance.c; path = ../pytbeaglehon/ccore/calc_instance.c; sourceTree = SOURCE_ROOT; };
+		2D6B0290127BC78800E04AA4 /* discrete_state_model.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = discrete_state_model.c; path = ../pytbeaglehon/ccore/discrete_state_model.c; sourceTree = SOURCE_ROOT; };
+		2D6B0291127BC78800E04AA4 /* phylo_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = phylo_util.c; path = ../pytbeaglehon/ccore/phylo_util.c; sourceTree = SOURCE_ROOT; };
+		2D6B029C127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libhmsbeagle-1.0.1.dylib"; path = "lib/libhmsbeagle-1.0.1.dylib"; sourceTree = BEAGLE_ROOT; };
+		2DC7EC99127C7F6000DA39AE /* real_pytbeaglehontrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = real_pytbeaglehontrace.c; path = ../c_example/real_pytbeaglehontrace.c; sourceTree = SOURCE_ROOT; };
+		2DC7ECAE127C7F7600DA39AE /* xcodepytbeaglehon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xcodepytbeaglehon; sourceTree = BUILT_PRODUCTS_DIR; };
+		2DC7ECB0127C7FAB00DA39AE /* real_beagletrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = real_beagletrace.c; path = ../c_example/real_beagletrace.c; sourceTree = SOURCE_ROOT; };
+		8DD76F6C0486A84900D96B5E /* xcodepytbeaglehon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xcodepytbeaglehon; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6859E8B029090EE04C91782 /* xcodepytbeaglehon.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = xcodepytbeaglehon.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2DC7ECA7127C7F7600DA39AE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DC7ECA8127C7F7600DA39AE /* libhmsbeagle-1.0.1.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8DD76F660486A84900D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D6B029D127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* xcodepytbeaglehon */ = {
+			isa = PBXGroup;
+			children = (
+				2DC7ECB0127C7FAB00DA39AE /* real_beagletrace.c */,
+				2D6B029C127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib */,
+				08FB7795FE84155DC02AAC07 /* Source */,
+				C6859E8C029090F304C91782 /* Documentation */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = xcodepytbeaglehon;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				2DC7EC99127C7F6000DA39AE /* real_pytbeaglehontrace.c */,
+				2D6B028E127BC78800E04AA4 /* asrv.c */,
+				2D6B028F127BC78800E04AA4 /* calc_instance.c */,
+				2D6B0290127BC78800E04AA4 /* discrete_state_model.c */,
+				2D6B0291127BC78800E04AA4 /* phylo_util.c */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD76F6C0486A84900D96B5E /* xcodepytbeaglehon */,
+				2DC7ECAE127C7F7600DA39AE /* xcodepytbeaglehon */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C6859E8C029090F304C91782 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				C6859E8B029090EE04C91782 /* xcodepytbeaglehon.1 */,
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2DC7ECA0127C7F7600DA39AE /* xcodebeagle */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2DC7ECAB127C7F7600DA39AE /* Build configuration list for PBXNativeTarget "xcodebeagle" */;
+			buildPhases = (
+				2DC7ECA1127C7F7600DA39AE /* Sources */,
+				2DC7ECA7127C7F7600DA39AE /* Frameworks */,
+				2DC7ECA9127C7F7600DA39AE /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = xcodebeagle;
+			productInstallPath = "$(HOME)/bin";
+			productName = xcodepytbeaglehon;
+			productReference = 2DC7ECAE127C7F7600DA39AE /* xcodepytbeaglehon */;
+			productType = "com.apple.product-type.tool";
+		};
+		8DD76F620486A84900D96B5E /* xcodepytbeaglehon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "xcodepytbeaglehon" */;
+			buildPhases = (
+				8DD76F640486A84900D96B5E /* Sources */,
+				8DD76F660486A84900D96B5E /* Frameworks */,
+				8DD76F690486A84900D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = xcodepytbeaglehon;
+			productInstallPath = "$(HOME)/bin";
+			productName = xcodepytbeaglehon;
+			productReference = 8DD76F6C0486A84900D96B5E /* xcodepytbeaglehon */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "xcodepytbeaglehon" */;
+			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* xcodepytbeaglehon */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76F620486A84900D96B5E /* xcodepytbeaglehon */,
+				2DC7ECA0127C7F7600DA39AE /* xcodebeagle */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2DC7ECA1127C7F7600DA39AE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DC7ECB1127C7FAB00DA39AE /* real_beagletrace.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8DD76F640486A84900D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D6B0292127BC78800E04AA4 /* asrv.c in Sources */,
+				2D6B0293127BC78800E04AA4 /* calc_instance.c in Sources */,
+				2D6B0294127BC78800E04AA4 /* discrete_state_model.c in Sources */,
+				2D6B0295127BC78800E04AA4 /* phylo_util.c in Sources */,
+				2DC7EC9A127C7F6000DA39AE /* real_pytbeaglehontrace.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB923208733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				HEADER_SEARCH_PATHS = (
+					..,
+					"${BEAGLE_ROOT}/include/libhmsbeagle-1.0",
+				);
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = "${BEAGLE_ROOT}/lib";
+				PRELINK_LIBS = hmsbeagle;
+				PRODUCT_NAME = xcodepytbeaglehon;
+			};
+			name = Debug;
+		};
+		1DEB923308733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${BEAGLE_ROOT}/lib\"",
+				);
+				PRODUCT_NAME = xcodepytbeaglehon;
+			};
+			name = Release;
+		};
+		1DEB923608733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		1DEB923708733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		2DC7ECAC127C7F7600DA39AE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				HEADER_SEARCH_PATHS = (
+					..,
+					"${BEAGLE_ROOT}/include/libhmsbeagle-1.0",
+				);
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = "${BEAGLE_ROOT}/lib";
+				PRELINK_LIBS = hmsbeagle;
+				PRODUCT_NAME = xcodepytbeaglehon;
+			};
+			name = Debug;
+		};
+		2DC7ECAD127C7F7600DA39AE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\\\"${BEAGLE_ROOT}/lib\\\"",
+				);
+				PRODUCT_NAME = xcodepytbeaglehon;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "xcodepytbeaglehon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923208733DC60010E9CD /* Debug */,
+				1DEB923308733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "xcodepytbeaglehon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923608733DC60010E9CD /* Debug */,
+				1DEB923708733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2DC7ECAB127C7F7600DA39AE /* Build configuration list for PBXNativeTarget "xcodebeagle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2DC7ECAC127C7F7600DA39AE /* Debug */,
+				2DC7ECAD127C7F7600DA39AE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}
