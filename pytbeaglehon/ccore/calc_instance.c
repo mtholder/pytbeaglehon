@@ -385,10 +385,10 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     
     BeagleInstanceDetails beagleInstanceDetails;
 #   if defined(BEAGLE_API_TRACE_PRINTING) && BEAGLE_API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF("/* BEAGLE_API Call */ resourceIndex = %d;\n", t->resourceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* BEAGLE_API Call */ resourceIndex = %d;\n", t->resourceIndex);
         char prefStr[1000];
         char reqStr[1000];
-        PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ resourcePref = %s ;\n/* BEAGLE_API Call */ resourcePref = %s ; \n", convertBeagleEnumToCString(t->resourcePref, prefStr), convertBeagleEnumToCString(t->resourceReq, reqStr));
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ resourcePref = %s ;\n/* BEAGLE_API Call */ resourceReq = %s ; \n", convertBeagleEnumToCString(t->resourcePref, prefStr), convertBeagleEnumToCString(t->resourceReq, reqStr));
         PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ rc = beagleCreateInstance(%d, %d, %d, %d", t->numLeaves, t->numPartialStructs, t->numStateCodeArrays, t->numStates);
         PYTBEAGLEHON_DEBUG_PRINTF4(", %ld, %d, %d, 1, %d, &resourceIndex, 1, resourcePref, resourceReq, &beagleInstanceDetails);\n", t->numPatterns, t->numEigenStorage, t->numProbMats, t->numRescalingsMultipliers);
 #   endif
@@ -407,6 +407,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->resourcePref,
                                                   t->resourceReq,
                                                   &beagleInstanceDetails);
+	PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance returned %d\n", rc);
     if (rc != BEAGLE_SUCCESS) {
 		PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance failed with error code %d\n", rc);
 		goto errorExit;
@@ -629,17 +630,17 @@ int getComputationalResourceDetails(int resourceIndex,
     if (supportedFlags) {  
         *supportedFlags = br->supportFlags;
         /* \TEMP only supporting ALWAYS scaling */
-        *supportedFlags ^= BEAGLE_FLAG_SCALING_MANUAL;
-        *supportedFlags ^= BEAGLE_FLAG_SCALING_AUTO;
-        *supportedFlags ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+        *supportedFlags &= (~BEAGLE_FLAG_SCALING_MANUAL);
+        *supportedFlags &= (~BEAGLE_FLAG_SCALING_AUTO);
+        *supportedFlags &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
         *supportedFlags |= BEAGLE_FLAG_SCALING_ALWAYS;
     }
     if (requiredFlags) {
         *requiredFlags = br->requiredFlags;
         /* \TEMP only supporting ALWAYS scaling */
-        *requiredFlags ^= BEAGLE_FLAG_SCALING_MANUAL;
-        *requiredFlags ^= BEAGLE_FLAG_SCALING_AUTO;
-        *requiredFlags ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+        *requiredFlags &= (~BEAGLE_FLAG_SCALING_MANUAL);
+        *requiredFlags &= (~BEAGLE_FLAG_SCALING_AUTO);
+        *requiredFlags &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
         *requiredFlags |= BEAGLE_FLAG_SCALING_DYNAMIC;
     }
 

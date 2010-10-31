@@ -155,14 +155,14 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 	
 	
 	/* \TEMP only supporting ALWAYS mode for scaling*/
-	resourcePref ^= BEAGLE_FLAG_SCALING_MANUAL;
-	resourcePref ^= BEAGLE_FLAG_SCALING_AUTO;
-    resourcePref ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+	resourcePref &= (~BEAGLE_FLAG_SCALING_MANUAL);
+	resourcePref &= (~BEAGLE_FLAG_SCALING_AUTO);
+    resourcePref &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
 	resourcePref |= BEAGLE_FLAG_SCALING_ALWAYS;
 
-	resourceReq ^= BEAGLE_FLAG_SCALING_MANUAL;
-	resourceReq ^= BEAGLE_FLAG_SCALING_AUTO;
-    resourceReq ^= BEAGLE_FLAG_SCALING_DYNAMIC;
+	resourceReq &= (~BEAGLE_FLAG_SCALING_MANUAL);
+	resourceReq &= (~BEAGLE_FLAG_SCALING_AUTO);
+    resourceReq &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
 	resourceReq |= BEAGLE_FLAG_SCALING_ALWAYS;
 	
 	handle = createLikelihoodCalcInstance(

@@ -5,8 +5,10 @@ noinst_PROGRAMS = testfatbeagle pytbeaglehontrace beagletrace
 testfatbeagle_SOURCES = testfatbeagle.c
 testfatbeagle_CPPFLAGS = $(AM_CPPFLAGS)
 
-check-local: testfatbeagle
+check-local: testfatbeagle pytbeaglehontrace beagletrace
 	$(abs_top_builddir)/c_example/testfatbeagle -v
+	$(abs_top_builddir)/c_example/beagletrace
+	$(abs_top_builddir)/c_example/pytbeaglehontrace
 
 
 nodist_pytbeaglehontrace_SOURCES = pytbeaglehontrace.c
@@ -15,8 +17,6 @@ BUILT_SOURCES = pytbeaglehontrace.c beagletrace.c $(abs_top_srcdir)/c_example/re
 
 testtrace_CPPFLAGS = $(AM_CPPFLAGS)
 
-check-local: testtrace
-	$(abs_top_builddir)/c_example/testtrace -v
 
 $(abs_top_srcdir)/c_example/real_pytbeaglehontrace.c: Makefile
 	if test -f $(abs_top_srcdir)/c_example/real_pytbeaglehontrace.c ; then \

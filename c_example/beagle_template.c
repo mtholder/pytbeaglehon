@@ -7,3 +7,5 @@ int main(int argc, char * argv[]) {
     long resourcePref; 
     long resourceReq;
     int rc;
+    int resourceIndex;
+    fprintf(stderr, "Running BEAGLE_API test\n");

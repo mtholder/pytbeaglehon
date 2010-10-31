@@ -43,3 +43,39 @@ export PYTHONPATH=`pwd`
 
 python setup.py build --use-ncl || exit
 cp build/lib.macosx-10.4-x86_64-2.6/pytbeaglehon/ccore/disc_state_cont_time_model.so pytbeaglehon/ccore/
+
+
+
+
+################################################################################
+# Generating C code from python execution
+################################################################################
+Occassionally (typically for debugging purposes), it is useful to generate the 
+C pytbeaglehon calls that the python code invokes (or the beagle calls). There is
+some support for doing this.
+
+If you use the invocation:
+    $ python setup.py build --debug --trace-printing 
+to build, then you can use the following shell script to create real_beagletrace.c
+and real_pytbeaglehontrace.c in the c_example directory (at the time of writing
+not all of the beagle calls are tracked, but the important pytbeaglehon calls are).
+
+################################################################################
+#!/bin/sh
+set -x
+if test -z $1
+then
+    echo "Expecting a path to an example python script" 
+    exit 1
+fi
+
+cp c_example/beagle_template.c c_example/real_beagletrace.c
+python "$1" 2>&1 | grep '/\* BEAGLE_API' >> c_example/real_beagletrace.c
+echo 'return 0;}' >> c_example/real_beagletrace.c
+
+cp c_example/template.c c_example/real_pytbeaglehontrace.c
+python "$1" 2>&1 | grep '/\* c' >> c_example/real_pytbeaglehontrace.c
+echo 'return 0;}' >> c_example/real_pytbeaglehontrace.c
+################################################################################
+
+
