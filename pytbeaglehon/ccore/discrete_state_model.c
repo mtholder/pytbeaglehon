@@ -35,7 +35,7 @@ void cdsctm_dtor(DSCTModelObj* dsct_model);
 DSCTModelObj * dsctModelNew(unsigned dim)  {
 	assert(dim > 1);
 	DSCTModelObj * dsct_model = PyObject_New(DSCTModelObj, &dsct_model_type);
-	PYTBEAGLEHON_DEBUG_PRINTF1("In dsctModelNew. Allocated address = %ld\n", (long) dsct_model);
+	PYTBEAGLEHON_DEBUG_PRINTF2("In dsctModelNew. dim=%u. Allocated address = %ld\n", dim, (long) dsct_model);
 
 
 	if (dsct_model) {
@@ -245,10 +245,10 @@ int recalc_eigen_mat(DSCTModelObj *mod) {
 #   if defined(BEAGLE_API_TRACE_PRINTING) && BEAGLE_API_TRACE_PRINTING
         int rowInd, colInd;
         for (rowInd = 0; rowInd < lce->numStates; ++rowInd) {
-            PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dEigenVal[%d] = %lf;\n", lce->beagleInstanceIndex, rowInd, eigenSolutionStruct->eigenValues[rowInd]);
+            PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dEigenVal[%d] = %.10lf;\n", lce->beagleInstanceIndex, rowInd, eigenSolutionStruct->eigenValues[rowInd]);
             for (colInd = 0; colInd < lce->numStates; ++colInd) {
-                PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ inst%dEigenVec[%d][%d] = %lf;\n", lce->beagleInstanceIndex, rowInd, colInd, eigenSolutionStruct->eigenVectors[rowInd][colInd]);
-                PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ inst%dInvEigenVec[%d][%d] = %lf;\n", lce->beagleInstanceIndex, rowInd, colInd, eigenSolutionStruct->invEigenVectors[rowInd][colInd]);
+                PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ inst%dEigenVec[%d][%d] = %.10lf;\n", lce->beagleInstanceIndex, rowInd, colInd, eigenSolutionStruct->eigenVectors[rowInd][colInd]);
+                PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ inst%dInvEigenVec[%d][%d] = %.10lf;\n", lce->beagleInstanceIndex, rowInd, colInd, eigenSolutionStruct->invEigenVectors[rowInd][colInd]);
             }
         }
         PYTBEAGLEHON_DEBUG_PRINTF5("/* BEAGLE_API Call */ rc = beagleSetEigenDecomposition(%d, %d, inst%dEigenVec[0], inst%dInvEigenVec[0], inst%dEigenVal); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lce->beagleInstanceIndex, eigenSolutionStruct->beagleEigenBufferIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex);

@@ -41,7 +41,7 @@ class ModelTest(unittest.TestCase):
         tree = TreeForTesting(newick='((1:0.0, 2:0.0):0.0,(3:0.0,4:0.0):0.01)')
         scorer = create_toggle_partial_tree_scorer(model_list=[m], data=data, tree=tree)
         lnL = scorer()
-        self.assertAlmostEqual(lnL, -95.53419)
+        self.assertAlmostEqual(lnL, -95.53419, places=4)
 def additional_tests():
     "returns all tests in this file as suite"
     return unittest.TestLoader().loadTestsFromTestCase(ModelTest)

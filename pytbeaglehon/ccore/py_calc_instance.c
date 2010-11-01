@@ -200,7 +200,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
     	PYTBEAGLEHON_DEBUG_PRINTF4("int numProbMats=%d; int numEigenStorage=%d; int numRescalingsMultipliers=%d; int resourceIndex=%d; ",  numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex);
 	    PYTBEAGLEHON_DEBUG_PRINTF2("long resourcePref=%ld; long resourceReq=%ld;\n", resourcePref, resourceReq);
     	PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ long handle = createLikelihoodCalcInstance(numLeaves, numPatterns, patternWeights, numStates, numStateCodeArrays, numPartialStructs, numInstRateModels, asrvObjectArray, numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex, resourcePref, resourceReq);\n");
-    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld);\n", handle);
+    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld); if (LCI == 0L) {fprintf(stderr, \"getLikeCalculatorInstance failed\"); return 1;}\n", handle);
 #   endif
 
 	if (handle < 0) {
@@ -318,7 +318,7 @@ PyObject* pySetStateCodeArray(PyObject *self, PyObject *args) {
             PYTBEAGLEHON_DEBUG_PRINTF1(", %d", LCI->stateCodeArrayScratch[i]);
         }
         PYTBEAGLEHON_DEBUG_PRINTF("};\n");
-        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ setStateCodeArray(handle, %d, scarr%d);\n", stateCodeArrayIndex, stateCodeArrayIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ rc = setStateCodeArray(handle, %d, scarr%d); if (rc != 0L) {fprintf(stderr, \"setStateCodeArray failed\"); return rc;}\n", stateCodeArrayIndex, stateCodeArrayIndex);
 #   endif
         
     if (setStateCodeArray(handle, stateCodeArrayIndex, LCI->stateCodeArrayScratch) != 0) {
@@ -386,14 +386,15 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
         }
         PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ ");
         if (waitTupleSize < 1) {
-            PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ calcPartials(handle, LCI->opScratch, %d, 0, -1);\n", opArraySize);
+            PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ rc = calcPartials(handle, LCI->opScratch, %d, 0, -1);\n", opArraySize);
         }
         else {
             for (i = 0; i < waitTupleSize; ++i) {
                 PYTBEAGLEHON_DEBUG_PRINTF2("LCI->waitPartialIndexScratch[%d] = %d; ", i, LCI->waitPartialIndexScratch[i]);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF2("\n/* cAPI Call */ calcPartials(handle, LCI->opScratch, %d, LCI->waitPartialIndexScratch, %d);\n", opArraySize, waitTupleSize);
+            PYTBEAGLEHON_DEBUG_PRINTF2("\n/* cAPI Call */ rc = calcPartials(handle, LCI->opScratch, %d, LCI->waitPartialIndexScratch, %d);\n", opArraySize, waitTupleSize);
         }
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ if (rc != 0L) {fprintf(stderr, \"calcPartials failed\"); return rc;}\n");
 #   endif
 
 
@@ -467,9 +468,10 @@ PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
         int i;
         PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ handle = %ld; eigenIndex = %d; ", handle, eigenInd);
         for (i = 0; i < weightTupleSize; ++i) {
-            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %.10lf; ", i,  LCI->categWeightScratch[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ setStateFreq(handle, eigenIndex, LCI->categWeightScratch);\n");
+        PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ rc = setStateFreq(handle, eigenIndex, LCI->categWeightScratch);\n");
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ if (rc != 0L) {fprintf(stderr, \"setStateFreq failed\"); return rc;}\n");
 #   endif
 	if (setStateFreq(handle, eigenInd, LCI->categWeightScratch) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setStateFreq");
@@ -543,12 +545,14 @@ PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
         for (i = 0; i < indArraySize; ++i) {
             PYTBEAGLEHON_DEBUG_PRINTF2("LCI->rootRescalerIndexScratch[%d] = %d; ", i,  LCI->rootRescalerIndexScratch[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, %d, &lnL);\n", indArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ rc = calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, %d, &lnL);\n", indArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ if (rc != 0L) {fprintf(stderr, \"calcRootLnL failed\"); return rc;}\n");
 #   endif
 	if (calcRootLnL(handle, LCI->rootPartialIndexScratch, LCI->categWeightIndexScratch, LCI->stateFreqIndexScratch, LCI->rootRescalerIndexScratch, (int) indArraySize, &lnL) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling calcRootLnL");
 	    return 0L;
 	}
+	PYTBEAGLEHON_DEBUG_PRINTF1("calcRootLnL => %.10lf\n", lnL);
 	return PyFloat_FromDouble(lnL);
 }
 
@@ -586,9 +590,10 @@ PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {
             PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightIndexScratch[%d] = %d; ", i,  LCI->categWeightIndexScratch[i]);
         }
         for (i = 0; i < indArraySize; ++i) {
-            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %lf; ", i,  LCI->categWeightScratch[i]);
+            PYTBEAGLEHON_DEBUG_PRINTF2("LCI->categWeightScratch[%d] = %.10lf; ", i,  LCI->categWeightScratch[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, %d);\n", (int) indArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF1("\n/* cAPI Call */ rc = setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, %d);\n", (int) indArraySize);
+        PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ if (rc != 0L) {fprintf(stderr, \"setSingletonCategoryWeights failed\"); return rc;}\n");
 #   endif
 	if (setSingletonCategoryWeights(handle, LCI->categWeightIndexScratch, LCI->categWeightScratch, (int) indArraySize) != 0) {
         PyErr_SetString(PyExc_ValueError, "Error calling setSingletonCategoryWeights");

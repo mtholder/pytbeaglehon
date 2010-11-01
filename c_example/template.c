@@ -9,3 +9,4 @@ int eigenIndex, numToCalc;
 DSCTModelObj * dsct_model_obj = 0L;
 double lnL;
 int main(int argc, char * argv[]) {
+    int rc;

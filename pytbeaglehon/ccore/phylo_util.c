@@ -480,6 +480,12 @@ int get_eigens(
 	*is_complex = 0;
 	memset(dWork, 0, (size_t) (dim * sizeof(double)));
 	memset(iWork, 0, (size_t) (dim * sizeof(int)));
+    if (dim == 4) {
+        PYTBEAGLEHON_DEBUG_PRINTF5("get_eigens dim = %d\n   q[0][0] = %.10lf; q[0][1] = %.10lf; q[0][2] = %.10lf; q[0][3] = %.10lf;\n", dim, q[0][0], q[0][1], q[0][2], q[0][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   q[1][0] = %.10lf; q[1][1] = %.10lf; q[1][2] = %.10lf; q[1][3] = %.10lf;\n", q[1][0], q[1][1], q[1][2], q[1][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   q[2][0] = %.10lf; q[2][1] = %.10lf; q[2][2] = %.10lf; q[2][3] = %.10lf;\n", q[2][0], q[2][1], q[2][2], q[2][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   q[3][0] = %.10lf; q[3][1] = %.10lf; q[3][2] = %.10lf; q[3][3] = %.10lf;\n", q[3][0], q[3][1], q[3][2], q[3][3]);
+    }
 	/* calculate eigenvalues and eigenvectors */
 	rc = compute_eigen_system (dim, q, eigenValues, imEigenValues, eigenVectors, iWork, dWork, is_complex);
 	if (rc == 0) {
@@ -489,8 +495,21 @@ int get_eigens(
 		return 0;
 	}
 	CopyDoubleMatrices (dim, (const double **) eigenVectors, workMat);
+    if (dim == 4) {
+        PYTBEAGLEHON_DEBUG_PRINTF4("eigenValues:\n   eigenValues[0] = %.10lf; eigenValues[1] = %.10lf; eigenValues[2] = %.10lf; eigenValues[3] = %.10lf;\n", eigenValues[0], eigenValues[1], eigenValues[2], eigenValues[3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("eigenVectors:\n   eigenVectors[0][0] = %.10lf; eigenVectors[0][1] = %.10lf; eigenVectors[0][2] = %.10lf; eigenVectors[0][3] = %.10lf;\n", eigenVectors[0][0], eigenVectors[0][1], eigenVectors[0][2], eigenVectors[0][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   eigenVectors[1][0] = %.10lf; eigenVectors[1][1] = %.10lf; eigenVectors[1][2] = %.10lf; eigenVectors[1][3] = %.10lf;\n", eigenVectors[1][0], eigenVectors[1][1], eigenVectors[1][2], eigenVectors[1][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   eigenVectors[2][0] = %.10lf; eigenVectors[2][1] = %.10lf; eigenVectors[2][2] = %.10lf; eigenVectors[2][3] = %.10lf;\n", eigenVectors[2][0], eigenVectors[2][1], eigenVectors[2][2], eigenVectors[2][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   eigenVectors[3][0] = %.10lf; eigenVectors[3][1] = %.10lf; eigenVectors[3][2] = %.10lf; eigenVectors[3][3] = %.10lf;\n", eigenVectors[3][0], eigenVectors[3][1], eigenVectors[3][2], eigenVectors[3][3]);
+    }
 	if (InvertMatrix (dim, workMat, dWork, iWork, invEigenVectors) == 0L)
 		return 0;
+    if (dim == 4) {
+        PYTBEAGLEHON_DEBUG_PRINTF4("invEigenVectors:\n   invEigenVectors[0][0] = %.10lf; invEigenVectors[0][1] = %.10lf; invEigenVectors[0][2] = %.10lf; invEigenVectors[0][3] = %.10lf;\n", invEigenVectors[0][0], invEigenVectors[0][1], invEigenVectors[0][2], invEigenVectors[0][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   invEigenVectors[1][0] = %.10lf; invEigenVectors[1][1] = %.10lf; invEigenVectors[1][2] = %.10lf; invEigenVectors[1][3] = %.10lf;\n", invEigenVectors[1][0], invEigenVectors[1][1], invEigenVectors[1][2], invEigenVectors[1][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   invEigenVectors[2][0] = %.10lf; invEigenVectors[2][1] = %.10lf; invEigenVectors[2][2] = %.10lf; invEigenVectors[2][3] = %.10lf;\n", invEigenVectors[2][0], invEigenVectors[2][1], invEigenVectors[2][2], invEigenVectors[2][3]);
+        PYTBEAGLEHON_DEBUG_PRINTF4("   invEigenVectors[3][0] = %.10lf; invEigenVectors[3][1] = %.10lf; invEigenVectors[3][2] = %.10lf; invEigenVectors[3][3] = %.10lf;\n", invEigenVectors[3][0], invEigenVectors[3][1], invEigenVectors[3][2], invEigenVectors[3][3]);
+    }
 	return 1;
 }
 
