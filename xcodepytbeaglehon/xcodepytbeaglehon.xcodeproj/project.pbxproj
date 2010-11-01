@@ -48,6 +48,9 @@
 		2D6B0290127BC78800E04AA4 /* discrete_state_model.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = discrete_state_model.c; path = ../pytbeaglehon/ccore/discrete_state_model.c; sourceTree = SOURCE_ROOT; };
 		2D6B0291127BC78800E04AA4 /* phylo_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = phylo_util.c; path = ../pytbeaglehon/ccore/phylo_util.c; sourceTree = SOURCE_ROOT; };
 		2D6B029C127BC83A00E04AA4 /* libhmsbeagle-1.0.1.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libhmsbeagle-1.0.1.dylib"; path = "lib/libhmsbeagle-1.0.1.dylib"; sourceTree = BEAGLE_ROOT; };
+		2D815E87127D1A7F00F726F7 /* beagle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = beagle.cpp; path = "../../beagle-lib/libhmsbeagle/beagle.cpp"; sourceTree = SOURCE_ROOT; };
+		2D815E95127D1B0E00F726F7 /* Plugin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Plugin.cpp; path = "../../beagle-lib/libhmsbeagle/plugin/Plugin.cpp"; sourceTree = SOURCE_ROOT; };
+		2D815E9A127D1B3500F726F7 /* UnixSharedLibrary.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UnixSharedLibrary.cpp; path = "../../beagle-lib/libhmsbeagle/plugin/UnixSharedLibrary.cpp"; sourceTree = SOURCE_ROOT; };
 		2DC7EC99127C7F6000DA39AE /* real_pytbeaglehontrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = real_pytbeaglehontrace.c; path = ../c_example/real_pytbeaglehontrace.c; sourceTree = SOURCE_ROOT; };
 		2DC7ECAE127C7F7600DA39AE /* xcodepytbeaglehon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = xcodepytbeaglehon; sourceTree = BUILT_PRODUCTS_DIR; };
 		2DC7ECB0127C7FAB00DA39AE /* real_beagletrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = real_beagletrace.c; path = ../c_example/real_beagletrace.c; sourceTree = SOURCE_ROOT; };
@@ -90,6 +93,9 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				2D815E9A127D1B3500F726F7 /* UnixSharedLibrary.cpp */,
+				2D815E95127D1B0E00F726F7 /* Plugin.cpp */,
+				2D815E87127D1A7F00F726F7 /* beagle.cpp */,
 				2DC7EC99127C7F6000DA39AE /* real_pytbeaglehontrace.c */,
 				2D6B028E127BC78800E04AA4 /* asrv.c */,
 				2D6B028F127BC78800E04AA4 /* calc_instance.c */,
