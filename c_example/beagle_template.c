@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <libhmsbeagle/beagle.h>
+#include "pytbeaglehon/ccore/phylo_util.h"
 
 int main(int argc, char * argv[]) {
     BeagleInstanceDetails beagleInstanceDetails ; 
