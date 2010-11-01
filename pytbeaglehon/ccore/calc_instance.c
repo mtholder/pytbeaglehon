@@ -393,7 +393,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
         char reqStr[1000];
         PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ resourcePref = %s ;\n/* BEAGLE_API Call */ resourceReq = %s ; \n", convertBeagleEnumToCString(t->resourcePref, prefStr), convertBeagleEnumToCString(t->resourceReq, reqStr));
         PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ rc = beagleCreateInstance(%d, %d, %d, %d", t->numLeaves, t->numPartialStructs, t->numStateCodeArrays, t->numStates);
-        PYTBEAGLEHON_DEBUG_PRINTF4(", %ld, %d, %d, 1, %d, &resourceIndex, 1, resourcePref, resourceReq, &beagleInstanceDetails);\n", t->numPatterns, t->numEigenStorage, t->numProbMats, t->numRescalingsMultipliers);
+        PYTBEAGLEHON_DEBUG_PRINTF4(", %ld, %d, %d, 1, %d, &resourceIndex, 1, resourcePref, resourceReq, &beagleInstanceDetails); if (rc < 0) {fprintf(stderr, \"Could not create instance\\n\");} \n", t->numPatterns, t->numEigenStorage, t->numProbMats, t->numRescalingsMultipliers);
 #   endif
     
     rc = beagleCreateInstance(t->numLeaves,
@@ -417,7 +417,10 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
     }
     
 #   if defined(BEAGLE_API_TRACE_PRINTING) && BEAGLE_API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ /* double * inst%dpatternWeights = (double *) malloc(%ld*sizeof(double));*/\n", rc, t->numPatterns);
+        PYTBEAGLEHON_DEBUG_PRINTF1("/* BEAGLE_API Call */ assert (rc == %d);\n", rc);
+        PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ double * inst%dpatternWeights = (double *) malloc(%ld*sizeof(double));\n", rc, t->numPatterns);
+        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ /* double * inst%dprobMatTemp = allocateDblMatrix(%d, %d);*/\n", rc, t->numStates, t->numStates);
+        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ /* double * inst%dpartialTemp = (double *) malloc(%ld*%d*sizeof(double));*/\n", rc, t->numPatterns, t->numStates);
         PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ double * inst%dedgeLenArray = (double *) malloc(%d*sizeof(double));\n", rc, t->numProbMats);
         PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ double * inst%dStateFreq = (double *) malloc(%d*sizeof(double));\n", rc, t->numEigenStorage);
         PYTBEAGLEHON_DEBUG_PRINTF2("/* BEAGLE_API Call */ double * inst%dCategWeight = (double *) malloc(%d*sizeof(double));\n", rc, t->numEigenStorage);
@@ -487,6 +490,7 @@ long createLikelihoodCalcInstance(
         long resourcePref,
         long resourceReq) {
 	struct LikeCalculatorInstance * calcInstancePtr;
+	int rc; 
 	long handle = createNewLikeCalculatorInstance();
 	if (handle >= 0) {
 		calcInstancePtr = getLikeCalculatorInstance(handle);
@@ -512,8 +516,11 @@ long createLikelihoodCalcInstance(
 			freeLikeCalculatorInstance(handle);
 			return BEAGLE_ERROR_OUT_OF_MEMORY;
 		}
-		
-		setPatternWeights(handle, patternWeights);
+		rc = setPatternWeights(handle, patternWeights);
+		if (rc != BEAGLE_SUCCESS) {
+			PYTBEAGLEHON_DEBUG_PRINTF("Error in setPatternWeights call\n");
+			return rc;
+		}
 	}
 	return handle;
 }
@@ -522,9 +529,14 @@ long createLikelihoodCalcInstance(
 int setPatternWeights(long handle, const double * patternWeights) {
     unsigned i;
     struct LikeCalculatorInstance * calcInstancePtr = getLikeCalculatorInstance(handle);
-    if (calcInstancePtr == 0L);
+    if (calcInstancePtr == 0L) {
+        PYTBEAGLEHON_DEBUG_PRINTF1("No LikeCalculatorInstance for handle=%ld. Returning...\n", handle);
         return BEAGLE_ERROR_OUT_OF_RANGE;
-    
+    }
+    if (calcInstancePtr->numPatterns == 0) {
+        PYTBEAGLEHON_DEBUG_PRINTF("Set setPatternWeights called on empty instance; returning early ...\n");
+        return BEAGLE_SUCCESS;
+    }
     /* Set pattern weights and send them to beagle */
     for (i = 0; i < calcInstancePtr->numPatterns; ++i) {
         if (patternWeights == 0L)
@@ -537,10 +549,10 @@ int setPatternWeights(long handle, const double * patternWeights) {
         for (i = 0; i < calcInstancePtr->numPatterns; ++i) {
             PYTBEAGLEHON_DEBUG_PRINTF3("inst%dpatternWeights[%u] = %f; ", calcInstancePtr->beagleInstanceIndex, i,  calcInstancePtr->patternWeights[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF("\n");
+        PYTBEAGLEHON_DEBUG_PRINTF2("\n/* BEAGLE_API Call */ beagleSetPatternWeights(%d, inst%dpatternWeights);\n", calcInstancePtr->beagleInstanceIndex, calcInstancePtr->beagleInstanceIndex);
 #   endif
-    beagleSetPatternWeights(calcInstancePtr->beagleInstanceIndex, calcInstancePtr->patternWeights);
-    return 0;
+   /* return beagleSetPatternWeights(calcInstancePtr->beagleInstanceIndex, calcInstancePtr->patternWeights); */
+   return BEAGLE_SUCCESS;
 }
 
 
@@ -655,7 +667,7 @@ int getComputationalResourceDetails(int resourceIndex,
         return BEAGLE_ERROR_UNINITIALIZED_INSTANCE;
 
 
-	if (! (br->supportFlags & BEAGLE_FLAG_SCALING_ALWAYS) ) /* \TEMP only supporting ALWAYS scaling */
+	if (! (br->supportFlags & BEAGLE_FLAG_SCALING_MANUAL) ) /* \TEMP only supporting MANUAL scaling */
 	    return BEAGLE_ERROR_GENERAL;
 	
 
@@ -673,18 +685,18 @@ int getComputationalResourceDetails(int resourceIndex,
     if (supportedFlags) {  
         *supportedFlags = br->supportFlags;
         /* \TEMP only supporting ALWAYS scaling */
-        *supportedFlags &= (~BEAGLE_FLAG_SCALING_MANUAL);
+        *supportedFlags &= (~BEAGLE_FLAG_SCALING_ALWAYS);
         *supportedFlags &= (~BEAGLE_FLAG_SCALING_AUTO);
         *supportedFlags &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
-        *supportedFlags |= BEAGLE_FLAG_SCALING_ALWAYS;
+        *supportedFlags |= BEAGLE_FLAG_SCALING_MANUAL;
     }
     if (requiredFlags) {
         *requiredFlags = br->requiredFlags;
         /* \TEMP only supporting ALWAYS scaling */
-        *requiredFlags &= (~BEAGLE_FLAG_SCALING_MANUAL);
+        *requiredFlags &= (~BEAGLE_FLAG_SCALING_ALWAYS);
         *requiredFlags &= (~BEAGLE_FLAG_SCALING_AUTO);
         *requiredFlags &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
-        *requiredFlags |= BEAGLE_FLAG_SCALING_DYNAMIC;
+        *requiredFlags |= BEAGLE_FLAG_SCALING_MANUAL;
     }
 
     return 0;
@@ -720,7 +732,7 @@ int calcPrMats(long handle,
             PYTBEAGLEHON_DEBUG_PRINTF3("inst%dProbMatArray[%d] = %d; ", lci->beagleInstanceIndex, i, probMatIndexArray[i]);
             PYTBEAGLEHON_DEBUG_PRINTF3("inst%dedgeLenArray[%d] = %lf; ", lci->beagleInstanceIndex, i, edgeLenArray[i]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF5("\n/* BEAGLE_API Call */ beagleUpdateTransitionMatrices(%d, %d, inst%dProbMatArray, 0L, 0L, inst%dedgeLenArray, %d);\n", lci->beagleInstanceIndex, bEigen, lci->beagleInstanceIndex, lci->beagleInstanceIndex, numToCalc);
+        PYTBEAGLEHON_DEBUG_PRINTF5("\n/* BEAGLE_API Call */ rc = beagleUpdateTransitionMatrices(%d, %d, inst%dProbMatArray, 0L, 0L, inst%dedgeLenArray, %d); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, bEigen, lci->beagleInstanceIndex, lci->beagleInstanceIndex, numToCalc);
 #   endif
     return beagleUpdateTransitionMatrices(lci->beagleInstanceIndex,
                                    bEigen,
@@ -741,7 +753,7 @@ int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
     }
     PYTBEAGLEHON_DEBUG_PRINTF2("In C. calling beagleGetTransitionMatrix(%d, %d, ...)\n", (int) lci->beagleInstanceIndex, probMatIndex); 
 #   if defined(BEAGLE_API_TRACE_PRINTING) && BEAGLE_API_TRACE_PRINTING
-        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ beagleGetTransitionMatrix(%d, %d, inst%dflattened);\n", lci->beagleInstanceIndex, probMatIndex, lci->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ rc = beagleGetTransitionMatrix(%d, %d, inst%dflattened); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, probMatIndex, lci->beagleInstanceIndex);
 #   endif
     rc = beagleGetTransitionMatrix(lci->beagleInstanceIndex,
 								     probMatIndex,
@@ -763,7 +775,7 @@ int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCod
         for (rc = 0; rc < lci->numPatterns; ++rc) {
             PYTBEAGLEHON_DEBUG_PRINTF3("inst%dstateCodeScratch[%d] = %d; ", lci->beagleInstanceIndex, rc, stateCodes[rc]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ beagleSetTipStates(%d, %d, inst%dstateCodeScratch);\n", lci->beagleInstanceIndex, stateCodeArrayIndex, lci->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ rc = beagleSetTipStates(%d, %d, inst%dstateCodeScratch); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, stateCodeArrayIndex, lci->beagleInstanceIndex);
 #   endif
     rc = beagleSetTipStates(lci->beagleInstanceIndex, stateCodeArrayIndex, stateCodes);
     return rc;
@@ -789,7 +801,7 @@ int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, 
                 PYTBEAGLEHON_DEBUG_PRINTF3("inst%dOp[%d].child2Partials = %d; ", lci->beagleInstanceIndex, rc, opArray[rc].child2Partials);
                 PYTBEAGLEHON_DEBUG_PRINTF3("inst%dOp[%d].child2TransitionMatrix = %d;\n", lci->beagleInstanceIndex, rc, opArray[rc].child2TransitionMatrix);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ beagleUpdatePartials(%d, inst%dOp, %d, BEAGLE_OP_NONE);\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, numOps);
+            PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ rc = beagleUpdatePartials(%d, inst%dOp, %d, BEAGLE_OP_NONE); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, numOps);
 #       endif
         rc = beagleUpdatePartials(lci->beagleInstanceIndex, opArray, numOps, BEAGLE_OP_NONE); /*TEMP: I think BEAGLE_OP_NONE is appropriate if we are in always scale mode*/
         if (rc != BEAGLE_SUCCESS) {
@@ -802,7 +814,7 @@ int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, 
             for (rc = 0; rc < numPartialsToWaitFor; ++rc) {
                 PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dWait[%d] = %d;\n", lci->beagleInstanceIndex, rc, waitPartialIndex[rc]);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ beagleWaitForPartials(%d, inst%dWait, %d);\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, numPartialsToWaitFor);
+            PYTBEAGLEHON_DEBUG_PRINTF3("\n/* BEAGLE_API Call */ rc = beagleWaitForPartials(%d, inst%dWait, %d);  if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, numPartialsToWaitFor);
 #       endif
         rc = beagleWaitForPartials(lci->beagleInstanceIndex, waitPartialIndex, numPartialsToWaitFor);
         if (rc != BEAGLE_SUCCESS) {
@@ -827,7 +839,7 @@ int setSingletonCategoryWeights(long handle, const int * indexList, const double
                 PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dCategWeightIndex[%d] = %d; ", lci->beagleInstanceIndex, rc, indexList[rc]);
                 PYTBEAGLEHON_DEBUG_PRINTF3("inst%dCategWeight[%d] = %lf;\n", lci->beagleInstanceIndex, rc, wtList[rc]);
             }
-            PYTBEAGLEHON_DEBUG_PRINTF4("\n/* BEAGLE_API Call */ beagleSetCategoryWeights(%d, inst%dCategWeightIndex[%d], inst%dCategWeight);\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, i, lci->beagleInstanceIndex);
+            PYTBEAGLEHON_DEBUG_PRINTF4("\n/* BEAGLE_API Call */ rc = beagleSetCategoryWeights(%d, inst%dCategWeightIndex[%d], inst%dCategWeight); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, i, lci->beagleInstanceIndex);
 #       endif
         rc = beagleSetCategoryWeights(lci->beagleInstanceIndex, indexList[i], &wtList[i]);
         if (rc != BEAGLE_SUCCESS) {
@@ -851,7 +863,7 @@ int setStateFreq(long handle, int bufferIndex, const double *freq) {
         for (rc = 0; rc < lci->numStates; ++rc) {
             PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dStateFreq[%d] = %lf;\n", lci->beagleInstanceIndex, rc, freq[rc]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ beagleSetStateFrequencies(%d, %d, inst%dStateFreq);\n", lci->beagleInstanceIndex, bufferIndex, lci->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ rc = beagleSetStateFrequencies(%d, %d, inst%dStateFreq); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, bufferIndex, lci->beagleInstanceIndex);
 #   endif
     rc = beagleSetStateFrequencies(lci->beagleInstanceIndex, bufferIndex, freq);
     if (rc != BEAGLE_SUCCESS) {
@@ -882,8 +894,8 @@ int calcRootLnL(long handle,
             PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dStateFreqIndex[%d] = %d;\n", lci->beagleInstanceIndex, rc, stateFreqIndex[rc]);
             PYTBEAGLEHON_DEBUG_PRINTF3("/* BEAGLE_API Call */ inst%dRootRescalerIndex[%d] = %d;\n", lci->beagleInstanceIndex, rc, rootRescalerIndex[rc]);
         }
-        PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ beagleCalculateRootLogLikelihoods(%d, inst%dRootPartialIndex, inst%dCategWeightIndex, inst%dStateFreqIndex, ", lci->beagleInstanceIndex, lci->beagleInstanceIndex, lci->beagleInstanceIndex, lci->beagleInstanceIndex);
-        PYTBEAGLEHON_DEBUG_PRINTF3("inst%dRootRescalerIndex, %d, &inst%dLnL);\n", lci->beagleInstanceIndex, lci->beagleInstanceIndex, lci->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ rc = beagleCalculateRootLogLikelihoods(%d, inst%dRootPartialIndex, inst%dCategWeightIndex, inst%dStateFreqIndex, ", lci->beagleInstanceIndex, lci->beagleInstanceIndex, lci->beagleInstanceIndex, lci->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF3("inst%dRootRescalerIndex, %d, &inst%dLnL); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lci->beagleInstanceIndex, arrayLength, lci->beagleInstanceIndex);
 #   endif
     rc = beagleCalculateRootLogLikelihoods(lci->beagleInstanceIndex,
                                       rootPartialIndex,

@@ -150,6 +150,21 @@ int extractNonNegativeIntFromTuple(PyObject * list_obj, unsigned i, int *value) 
     return 1;
 }
 
+int extractIntFromTuple(PyObject * list_obj, unsigned i, int *value) {
+	long lval;
+	if (extractLongFromTuple(list_obj, i, &lval) == 0)
+	    return 0;
+    if (lval >= INT_MAX) {
+        PYTBEAGLEHON_DEBUG_PRINTF1("extractIntFromTuple lval = %ld\n", lval);
+        PyErr_SetString(PyExc_TypeError, "value out of range for an integer");
+        return 0L;
+    }
+    *value = lval;
+    return 1;
+}
+
+
+
 int extractLongFromList(PyObject * list_obj, unsigned i, long *value) {
     PyObject *item;
 	assert(value);
@@ -176,6 +191,19 @@ int extractNonNegativeIntFromList(PyObject * list_obj, unsigned i, int *value) {
     if (lval >= INT_MAX || lval < 0) {
         PYTBEAGLEHON_DEBUG_PRINTF1("extractNonNegativeIntFromList lval = %ld\n", lval);
         PyErr_SetString(PyExc_TypeError, "value out of range for an unsigned integer");
+        return 0L;
+    }
+    *value = lval;
+    return 1;
+}
+
+int extractIntFromList(PyObject * list_obj, unsigned i, int *value) {
+	long lval;
+	if (extractLongFromList(list_obj, i, &lval) == 0L)
+	    return 0L;
+    if (lval >= INT_MAX) {
+        PYTBEAGLEHON_DEBUG_PRINTF1("extractIntFromList lval = %ld\n", lval);
+        PyErr_SetString(PyExc_TypeError, "value out of range for an integer");
         return 0L;
     }
     *value = lval;
@@ -211,6 +239,23 @@ PyObject * tupleToUnsignedArray(PyObject *tuple_obj, int *arr, unsigned n) {
 	}
 	for (i = 0; i < n; ++i) {
 	    if (extractNonNegativeIntFromTuple(tuple_obj, i, &tmp) == 0)
+	        return 0L;
+		arr[i] = tmp;
+	}
+	return none();
+}
+
+
+PyObject * tupleToIntArray(PyObject *tuple_obj, int *arr, unsigned n) {
+	unsigned pytuple_len = (unsigned) PyTuple_Size(tuple_obj);
+	unsigned i;
+	int tmp;
+	if (pytuple_len != n) {
+		PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+		return 0L;
+	}
+	for (i = 0; i < n; ++i) {
+	    if (extractIntFromTuple(tuple_obj, i, &tmp) == 0)
 	        return 0L;
 		arr[i] = tmp;
 	}

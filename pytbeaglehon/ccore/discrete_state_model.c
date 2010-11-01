@@ -251,7 +251,7 @@ int recalc_eigen_mat(DSCTModelObj *mod) {
                 PYTBEAGLEHON_DEBUG_PRINTF4("/* BEAGLE_API Call */ inst%dInvEigenVec[%d][%d] = %lf;\n", lce->beagleInstanceIndex, rowInd, colInd, eigenSolutionStruct->invEigenVectors[rowInd][colInd]);
             }
         }
-        PYTBEAGLEHON_DEBUG_PRINTF5("/* BEAGLE_API Call */ beagleSetEigenDecomposition(%d, %d, inst%dEigenVec[0], inst%dInvEigenVec[0], inst%dEigenVal);\n", lce->beagleInstanceIndex, eigenSolutionStruct->beagleEigenBufferIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex);
+        PYTBEAGLEHON_DEBUG_PRINTF5("/* BEAGLE_API Call */ rc = beagleSetEigenDecomposition(%d, %d, inst%dEigenVec[0], inst%dInvEigenVec[0], inst%dEigenVal); if (rc != BEAGLE_SUCCESS) {return rc;}\n", lce->beagleInstanceIndex, eigenSolutionStruct->beagleEigenBufferIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex, lce->beagleInstanceIndex);
 #   endif
 	rc = beagleSetEigenDecomposition(lce->beagleInstanceIndex,
                                      eigenSolutionStruct->beagleEigenBufferIndex,

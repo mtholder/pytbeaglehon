@@ -310,6 +310,7 @@ class PartialLikeWrapper(BufferWrapper):
         self._state_hash = None
         self._full_state_hash = None
         self.revision_index = None
+        self.rescaler_index = -1 # BEAGLE_OP_NONE flag (if we get to the root and this is still the rescaler, then no rescaling has been done)...
 
     def set_calculated(self):
         self.revision_index = self.next_revision_index
@@ -1039,7 +1040,7 @@ class LikeCalcEnvironment(object):
         cat_weight_index_tuple = es_wrapper.get_category_weight_index_list(num_categories)
         state_freq_index = es_wrapper.index
         state_freq_index_tuple = tuple([state_freq_index] * num_categories)
-        rescalers = tuple([i.index for i in root_partials])
+        rescalers = tuple([i.rescaler_index for i in root_partials])
         partial_ind_tuple = tuple([i.beagle_buffer_index for i in root_partials])
         _LOG.debug("calling cdsctm_calc_root_likelihood(%d, %s, %s, %s, %s)" % (self._handle, 
                                            repr(partial_ind_tuple),

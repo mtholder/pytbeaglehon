@@ -155,15 +155,15 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
 	
 	
 	/* \TEMP only supporting ALWAYS mode for scaling*/
-	resourcePref &= (~BEAGLE_FLAG_SCALING_MANUAL);
+	resourcePref &= (~BEAGLE_FLAG_SCALING_ALWAYS);
 	resourcePref &= (~BEAGLE_FLAG_SCALING_AUTO);
     resourcePref &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
-	resourcePref |= BEAGLE_FLAG_SCALING_ALWAYS;
+	resourcePref |= BEAGLE_FLAG_SCALING_MANUAL;
 
-	resourceReq &= (~BEAGLE_FLAG_SCALING_MANUAL);
+	resourceReq &= (~BEAGLE_FLAG_SCALING_ALWAYS);
 	resourceReq &= (~BEAGLE_FLAG_SCALING_AUTO);
     resourceReq &= (~BEAGLE_FLAG_SCALING_DYNAMIC);
-	resourceReq |= BEAGLE_FLAG_SCALING_ALWAYS;
+	resourceReq |= BEAGLE_FLAG_SCALING_MANUAL;
 	
 	handle = createLikelihoodCalcInstance(
 	        numLeaves,
@@ -524,7 +524,7 @@ PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
         return 0L;
     if (tupleToUnsignedArray(stateFreqIndTuple, LCI->stateFreqIndexScratch, indArraySize) == 0L)
         return 0L;
-    if (tupleToUnsignedArray(rescalerIndTuple, LCI->rootRescalerIndexScratch, indArraySize) == 0L)
+    if (tupleToIntArray(rescalerIndTuple, LCI->rootRescalerIndexScratch, indArraySize) == 0L)
         return 0L;
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
         PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ ");

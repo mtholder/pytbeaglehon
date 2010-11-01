@@ -6,9 +6,9 @@ testfatbeagle_SOURCES = testfatbeagle.c
 testfatbeagle_CPPFLAGS = $(AM_CPPFLAGS)
 
 check-local: testfatbeagle pytbeaglehontrace beagletrace
-	$(abs_top_builddir)/c_example/testfatbeagle -v
 	$(abs_top_builddir)/c_example/beagletrace
 	$(abs_top_builddir)/c_example/pytbeaglehontrace
+	$(abs_top_builddir)/c_example/testfatbeagle -v
 
 
 nodist_pytbeaglehontrace_SOURCES = pytbeaglehontrace.c
