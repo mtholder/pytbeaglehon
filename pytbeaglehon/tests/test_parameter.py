@@ -14,9 +14,7 @@ _LOG = get_logger(__name__)
 class ParameterTest(unittest.TestCase):
     def test_prob_vec_parameter(self):
         f, s = MutableFloatParameter(.5), MutableFloatParameter(.5)
-        print f.__dict__
         h = ProbabilityVectorParameter([f, s])
-        print f.__dict__
         f.value = .4
         self.assertAlmostEqual(s.value, 0.6, places=5)
         self.assertRaises(ValueError, f.set_value, 1.1)
