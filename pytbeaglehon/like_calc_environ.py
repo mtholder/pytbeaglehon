@@ -472,19 +472,16 @@ class CalculatedCache(object):
         return o
 
     def flag_as_calculated(self, o):
-        assert(o in self._queued)
-        assert(o not in self._saved)
         o.set_calculated()
         self._queued.discard(o)
-        self._calculated.add(o)
+        if o not in self._saved:
+            self._calculated.add(o)
         try:
             self._state_to_wrapper[o.state_hash] = o
         except:
             pass
 
     def release(self, o):
-        assert(o in self._queued)
-        assert(o not in self._free)
         self._queued.discard(o)
         self._free.add(o)
         try:
@@ -973,7 +970,7 @@ class LikeCalcEnvironment(object):
                 pr_wrap = p_cache.get_from_cache(curr_hash)
     
                 if pr_wrap is not None:
-                    # cache-hit...
+                    _LOG.debug("Cache-hit on PrMat...")
                     if (cf == CachingFacets.RELEASE_THEN_SAVE) and (curr_hash != prob_mat_caching[1]):
                         raise ValueError("Calculation of probability matrix: RELEASE_THEN_SAVE specified, but the cache returned an unexpected object")
                 else:

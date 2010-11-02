@@ -48,7 +48,7 @@ class RateHetManager(object):
             raise ValueError("num_categories must be a positive integer")
         self._num_cat = num_categories
         if probabilities is None:
-           probabilities = [1.0/num_categories] * num_categories
+           self._probabilities = [1.0/num_categories] * num_categories
         self._rate_list = [1.0] * num_categories
         if rate_het_type <= RateHetType.LAST_GAMMA:
             shape = float(kwargs.get("shape", 0.5))

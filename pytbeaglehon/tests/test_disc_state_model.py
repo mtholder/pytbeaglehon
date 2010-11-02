@@ -15,6 +15,15 @@ from pytbeaglehon.disc_state_cont_time_model import JukesCantorModel, DNAType, R
 from pytbeaglehon.disc_state_cont_time_model import _r_upper_to_r_mat, _r_mat_to_r_upper
 
 class ModelTest(unittest.TestCase):
+    def test_change_kappa(self):
+        mp = MutableFloatParameter(2.0)
+        m = Kimura2ParameterModel(mp)
+        nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        mp.value = 1.0
+        nc, ti, tv = 0.951630238774, 0.0161232537421, 0.0161232537421
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
+        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
     def test_gtr(self):
         kappa = 6.122449
         m = RevDiscStateContTimeModel(state_freq=(0.3, 0.25, 0.2, 0.25),
@@ -36,15 +45,6 @@ class ModelTest(unittest.TestCase):
                                             [0.0014964, 0.989928, 0.0009976, 0.007576],
                                             [0.009095, 0.001247, 0.988415, 0.001247],
                                             [0.0014964, 0.007576, 0.0009976, 0.989928]]])
-    def test_change_kappa(self):
-        mp = MutableFloatParameter(2.0)
-        m = Kimura2ParameterModel(mp)
-        nc, ti, tv = 0.951679099289, 0.0239356129609, 0.0121926438748
-        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
-        mp.value = 1.0
-        nc, ti, tv = 0.951630238774, 0.0161232537421, 0.0161232537421
-        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
-        assert_list_of_mat_eq(self, m.prob_matrices(0.05), [[[nc, tv, ti, tv], [tv, nc, tv, ti], [ti, tv, nc, tv], [tv, ti, tv, nc]]])
     def test_jc_probs(self):
         jc = JukesCantorModel()
         nc, c = 0.99006637135539677, 0.0033112095482010773

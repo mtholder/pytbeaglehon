@@ -411,7 +411,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->resourceReq,
                                                   &beagleInstanceDetails);
 	PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance returned %d\n", rc);
-    if (rc != BEAGLE_SUCCESS) {
+    if (rc < 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance failed with error code %d\n", rc);
 		goto errorExit;
     }
