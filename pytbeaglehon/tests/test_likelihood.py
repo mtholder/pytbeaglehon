@@ -32,7 +32,7 @@ class ModelTest(unittest.TestCase):
 #         ; end;
 #         begin paup;    set storebr;    lset nst = 2 trat=3 basefreq = ( .3  .25  .2) userbr; end;
 #         begin trees; tree o = [&U] (t1:0.0, t2:0.0,(t3:0.0,t4:0.0):0.01); end;
-#         begin paup ;     lscore /sitelik ;      quit; end;
+#         begin paup ;     lscore /sitelik ;   lsc / tr = 2.45 ;   quit; end;
 
         t1_2_data = tuple([0]*4 + [1]*4 + [2]*4 + [3]*4)
         t3_4_data = tuple([0, 1, 2, 3] * 4)
