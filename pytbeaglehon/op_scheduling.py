@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 """Classes that accumulate collections of partial calculations to perform
 """
+from pytbeaglehon import get_logger
+_LOG = get_logger(__name__)
+
 from pytbeaglehon.like_calc_environ import PartialLikeWrapper, NONE_HASH, ProbMatWrapper
 class TogglePartialScheduler(object):
     def __init__(self, tree_scorer, model):
@@ -72,9 +75,11 @@ class TogglePartialScheduler(object):
 
     def queue_prmat(self, node):
         mod = self.model
-        if mod not in node._LCE_prob_mat_curr:
+        pm = node._LCE_prob_mat_curr.get(mod)
+        sh = mod.state_hash
+        if (pm is None) or (pm[0] != sh):
             plist = node._LCE_prob_mat_scratch[mod]
-            node._LCE_prob_mat_curr[mod] = plist
+            node._LCE_prob_mat_curr[mod] = [sh, plist]
             self._queued_prmat_calcs.append((plist, node.edge_length))
             return True
         return False
@@ -84,53 +89,59 @@ class TogglePartialScheduler(object):
         mod = self.model
         c = node.children
         nc = len(c)
+        _LOG.debug("adding node %s to partial calculation, nc=%d" % (str(node), nc))
         if nc == 2:
+            sh = mod.state_hash
             left_child, right_child = c
             children_dirty = self.queue_prmat(left_child)
             children_dirty = self.queue_prmat(right_child) or children_dirty
-            self._LCE_last_queued_dest = []
-            if mod not in node._LCE_partial_curr:
+            pc = node._LCE_partial_curr.get(mod)
+            if (pc is None) or (pc[0] != sh):
+                self._LCE_last_queued_dest = []
                 # we need to calculate this partial...
                 partial_dest = node._LCE_partial_scratch[mod]
-                node._LCE_partial_curr[mod] = partial_dest
+                node._LCE_partial_curr[mod] = [sh, partial_dest]
 
                 if left_child._LCE_is_internal:
                     assert(mod in left_child._LCE_partial_curr) # child should have been staged.
+                    assert(sh == left_child._LCE_partial_curr[mod][0]) # child should have been staged.
                     if right_child._LCE_is_internal:
                         assert(mod in right_child._LCE_partial_curr) # child should have been staged.
+                        assert(sh == right_child._LCE_partial_curr[mod][0]) # child should have been staged.
                         t = (partial_dest,
                              PartialLikeWrapper.NO_LEAF_OP,
-                             left_child._LCE_partial_curr[mod],
-                             left_child._LCE_prob_mat_curr[mod],
-                             right_child._LCE_partial_curr[mod],
-                             right_child._LCE_prob_mat_curr[mod])
+                             left_child._LCE_partial_curr[mod][1],
+                             left_child._LCE_prob_mat_curr[mod][1],
+                             right_child._LCE_partial_curr[mod][1],
+                             right_child._LCE_prob_mat_curr[mod][1])
                     else:
                         t = (partial_dest,
                              PartialLikeWrapper.ONE_LEAF_OP,
-                             left_child._LCE_partial_curr[mod],
-                             left_child._LCE_prob_mat_curr[mod],
+                             left_child._LCE_partial_curr[mod][1],
+                             left_child._LCE_prob_mat_curr[mod][1],
                              right_child._LCE_state_codes,
-                             right_child._LCE_prob_mat_curr[mod])
+                             right_child._LCE_prob_mat_curr[mod][1])
                 else:
                     if right_child._LCE_is_internal:
                         assert(mod in right_child._LCE_partial_curr) # child should have been staged.
+                        assert(sh == right_child._LCE_partial_curr[mod][0]) # child should have been staged.
                         t = (partial_dest,
                              PartialLikeWrapper.ONE_LEAF_OP,
-                             right_child._LCE_partial_curr[mod],
-                             right_child._LCE_prob_mat_curr[mod],
+                             right_child._LCE_partial_curr[mod][1],
+                             right_child._LCE_prob_mat_curr[mod][1],
                              left_child._LCE_state_codes,
-                             left_child._LCE_prob_mat_curr[mod])
+                             left_child._LCE_prob_mat_curr[mod][1])
                     else:
                         t = (partial_dest,
                              PartialLikeWrapper.TWO_LEAF_OP,
                              left_child._LCE_state_codes,
-                             left_child._LCE_prob_mat_curr[mod],
+                             left_child._LCE_prob_mat_curr[mod][1],
                              right_child._LCE_state_codes,
-                             right_child._LCE_prob_mat_curr[mod])
+                             right_child._LCE_prob_mat_curr[mod][1])
                 self._queued_partial_calcs.append(t)
                 self._LCE_last_queued_dest.extend(partial_dest)
             else:
-                assert(not children_dirty) # if we are hear, then we failed to flag the ancestor of a changed prmat as diry
+                assert(not children_dirty) # if we are hear, then we failed to flag the ancestor of a changed prmat as dirty
         elif nc > 2:
             raise ValueError("Scoring trees with polytomies is not supported (yet).")
         elif nc == 1:

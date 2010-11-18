@@ -1025,6 +1025,7 @@ class LikeCalcEnvironment(object):
 
     def integrate_likelihood(self, model, root_partials):
         assert(self._incarnated)
+        _LOG.debug("model.num_rate_categories == len(root_partials) ==> %d == %d" % (model.num_rate_categories, len(root_partials)))
         assert(model.num_rate_categories == len(root_partials))
         num_categories = len(root_partials)
         asrv = model.asrv

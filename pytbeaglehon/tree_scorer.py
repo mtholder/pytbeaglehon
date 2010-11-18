@@ -29,6 +29,8 @@ Expectations of a node objects:
     every node should have a edge_length attribute (or property) with a non-negative
         float.
 """
+from pytbeaglehon import get_logger
+_LOG = get_logger(__name__)
 
 class TreeScorer(object):
     def __init__(self, like_calc_env, tree):
@@ -42,6 +44,7 @@ class TreeScorer(object):
         self._entire_tree_dirty = True
         self._changed_models = set(like_calc_env.model_list)
         self._num_models = len(like_calc_env.model_list)
+        self.model_hash_list = [None] * self._num_models
         self._cached_model_to_score = {}
         self.model_list = like_calc_env.model_list
         self.initialize_tree()
@@ -60,12 +63,18 @@ class TreeScorer(object):
 
     def get_ln_L(self):
         if self.entire_tree_is_dirty:
-            self._changed_models = set(self._LCE.model_list)
+            _LOG.debug("entire_tree_is_dirty is True")
+            self._changed_models = set(self.model_list)
+        else:
+            for n, m in enumerate(self.model_list):
+                if self.model_hash_list[n] != m.state_hash:
+                    self._changed_models.add(m)
         changed_model_list = list(self._changed_models)
         num_mods_to_update = len(changed_model_list)
         
         for cm in changed_model_list:
             self._cached_model_to_score[cm] = self._calc_full_traversal_lnL_for_model(cm)
+            self.model_hash_list[self.model_list.index(cm)] = cm.state_hash
             self._changed_models.remove(cm)
 
 
@@ -75,6 +84,7 @@ class TreeScorer(object):
 
         self._lnL = sum([i for i in self._cached_model_to_score.itervalues()])
         return self._lnL
+
 class TogglePartialTreeScorer(TreeScorer):
     '''Assumes that there are:
             - enough partials for every internal node to have two
@@ -90,6 +100,9 @@ class TogglePartialTreeScorer(TreeScorer):
        So that the changes to restore the tree do not result in "dirty-ing" of 
         partials.
     '''
+    def __init__(self, like_calc_env, tree):
+        TreeScorer.__init__(self, like_calc_env, tree)
+        _LOG.debug("TogglePartialTreeScorer.__init__.entire_tree_is_dirty = %s" % str(self.entire_tree_is_dirty))
     def initialize_tree(self):
         LCE = self._LCE
         tips = []
@@ -108,7 +121,7 @@ class TogglePartialTreeScorer(TreeScorer):
                 nd._LCE_edge_len_stored = nd.edge_length
                 nd._LCE_edge_len_scratch = nd.edge_length
             nd._LCE_edge_len_curr = None
-            nd._LCE_prob_mat_curr = {}
+            nd._LCE_prob_mat_curr = {} 
             nd._LCE_partial_curr = {}
             nd._LCE_is_internal = True
             nd._LCE_partial_stored = {}
@@ -149,15 +162,20 @@ class TogglePartialTreeScorer(TreeScorer):
 
     
     def accept(self):
+        
         for nd in self._tree.postorder_internal_node_iter():
             if nd._LCE_edge_len_curr is nd._LCE_edge_len_scratch:
                 nd._LCE_edge_len_stored, nd._LCE_edge_len_scratch = nd._LCE_edge_len_scratch, nd._LCE_edge_len_stored
             for mod in self.model_list:
                 if nd.parent is not None:
                     if nd._LCE_prob_mat_curr[mod] is nd._LCE_prob_mat_scratch[mod]:
+                        pel = nd._LCE_prob_mat_stored[mod]
                         nd._LCE_prob_mat_stored[mod], nd._LCE_prob_mat_scratch[mod] = nd._LCE_prob_mat_scratch[mod], nd._LCE_prob_mat_stored[mod]
+                        pel[0] = None
                 if nd._LCE_partial_curr[mod] is nd._LCE_partial_scratch[mod]:
-                    nd._LCE_partial_stored[mod], nd._LCE_partial_scratch[mod] = nd._LCE_partial_scratch[mod], nd._LCE_partial_stored[mod]
+                    sel = nd._LCE_partial_stored[mod]
+                    nd._LCE_partial_stored[mod], nd._LCE_partial_scratch[mod] = nd._LCE_partial_scratch[mod], sel
+                    sel[0] = None
 
     def revert(self):
         for nd in self._tree.postorder_internal_node_iter():
@@ -166,6 +184,7 @@ class TogglePartialTreeScorer(TreeScorer):
             nd._LCE_partial_curr = dict(nd._LCE_partial_stored)
 
     def _calc_full_traversal_lnL_for_model(self, model):
+        _LOG.debug("_calc_full_traversal_lnL_for_model called for %s" % str(model))
         assert(self._scheduler is None)
         from pytbeaglehon.op_scheduling import TogglePartialScheduler
         es = model.eigen_soln
@@ -175,8 +194,9 @@ class TogglePartialTreeScorer(TreeScorer):
                  self._scheduler.add_internal_node_to_partial_calc(node)
         finally:
             self._scheduler.end_partial_calculations()
-            root_partials = self._scheduler._LCE_last_queued_dest
+            prev_sched = self._scheduler
             self._scheduler = None
+        root_partials = prev_sched._LCE_last_queued_dest
         model.transmit_category_weights()
         model.transmit_state_freq()
         assert (es is model.eigen_soln)

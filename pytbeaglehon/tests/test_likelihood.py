@@ -18,7 +18,7 @@ from pytbeaglehon.tree_scorer import create_toggle_partial_tree_scorer
 
 class ModelTest(unittest.TestCase):
     def test_simplest(self):
-        m = HKY85Model(2.0, [.25, 0.25, 0.25, 0.25])
+        m = HKY85Model(kappa=2.0, state_freq=[.25, 0.25, 0.25, 0.25])
         m.kappa.is_mutable = True
         m.kappa = 6.122449
         m.state_freq.is_mutable = True
@@ -42,6 +42,12 @@ class ModelTest(unittest.TestCase):
         scorer = create_toggle_partial_tree_scorer(model_list=[m], data=data, tree=tree)
         lnL = scorer()
         self.assertAlmostEqual(lnL, -95.53419, places=4)
+        scorer.accept()
+        _LOG.debug("About to change kappa")
+        m.kappa.value = 5.0
+        lnL = scorer()
+        self.assertAlmostEqual(lnL, -94.57203, places=4)
+
 def additional_tests():
     "returns all tests in this file as suite"
     return unittest.TestLoader().loadTestsFromTestCase(ModelTest)
