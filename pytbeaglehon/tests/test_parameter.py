@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Copyright (c) 2005-7 by Mark T. Holder
+# Copyright (c) 2010-2011 by Mark T. Holder
 # (see bottom of file)
 
 "unit tests of among-site rate heterogeneity code"

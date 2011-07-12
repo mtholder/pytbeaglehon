@@ -2,7 +2,7 @@
 '''Wrappers around numbers to encapsulate the concept of a free parameter of a 
 model.
 '''
-# Copyright (c) 2010 by Mark T. Holder,  University of Kansas
+# Copyright (c) 2010 by Mark T. Holder
 # (see bottom of file)
 from itertools import izip
 from pytbeaglehon import get_logger

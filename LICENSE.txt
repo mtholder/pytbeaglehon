@@ -1,7 +1,7 @@
 pytbeaglthon Phylogenetic Likelihood Caluclations using beaglelib.
 
 With the exception of some code written by others (see below). The code is
-  Copyright (C) 2010
+  Copyright (C) 2010-2011
   Mark Holder, 
   Department of Ecology and Evolutionary Biology,
   The University of Kansas.

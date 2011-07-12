@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Copyright (c) 2005-7 by Mark T. Holder,  University of Kansas
+# Copyright (c) 2010-2011 by Mark T. Holder
 # (see bottom of file)
 """Classes for encapsulating datatypes, and factory for encapsulating data 
 structures for characters at the leaves of a tree and the conditional 
