@@ -25,7 +25,7 @@ AC_PROG_CC
 CFLAGS="$INP_CFLAGS"
 
 # required because we are building a library 
-AC_PROG_RANLIB
+LT_INIT
 
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL

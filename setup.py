@@ -55,7 +55,7 @@ Note that the build is sensitive to your CFLAGS environmental variable (and
     arguments, use of quoted strings with spaces may cause problems).
 
 Environmental variables
-BEAGLE_VERSION  The full version appended to the beaglelib. Default: 1.0.1
+BEAGLE_VERSION  The full version appended to the beaglelib. Default: 1
 BEAGLE_PREFIX The directory used as the prefix for the beagle install
     Default: /usr/local
 
@@ -128,7 +128,7 @@ preprocessor_defines =[("DEBUG_PRINTING", kDebugPrint),
                       ]
 beagle_full_version = os.environ.get("BEAGLE_VERSION")
 if beagle_full_version is None:
-    beagle_full_version = "1.0.1"
+    beagle_full_version = "1"
     sys.stderr.write('BEAGLE_VERSION not found in environment...  Assuming "%s"\n' % beagle_full_version)
 beagle_version = ".".join(beagle_full_version.split(".")[:2])
 
@@ -160,7 +160,7 @@ if cuda_lib is None:
     sys.stderr.write('BEAGLE_DEPENDENCY_LIB not found in environment...  Assuming no additional libraries to be added to the link path\n')
 else:
     libraries.append(cuda_lib)
-libraries.append('hmsbeagle-%s' % beagle_full_version)
+libraries.append('hmsbeagle')
 
 using_ncl = "--use-ncl" in args
 if using_ncl:
