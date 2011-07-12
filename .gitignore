@@ -12,3 +12,7 @@ aclocal.m4
 autom4te.cache
 c_example/real_beagletrace.c
 c_example/real_pytbeaglehontrace.c
+config.sub
+depcomp
+install-sh
+missing

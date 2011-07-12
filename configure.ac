@@ -63,11 +63,11 @@ AC_ARG_WITH(
 	fi
 	])
 
-if ! test -d "$BEAGLE_PREFIX/include/libhmsbeagle-1.0" ; then
-	AC_MSG_ERROR([beaglelib version 1.0 or higher is a prerequisite for building pytbeaglehon. Expecting a directory called $BEAGLE_PREFIX/include/libhmsbeagle-1.0, verify that the argument to --with-beagle is correct.])
+if ! test -d "$BEAGLE_PREFIX/include/libhmsbeagle-1" ; then
+	AC_MSG_ERROR([beaglelib version 1.0 or higher is a prerequisite for building pytbeaglehon. Expecting a directory called $BEAGLE_PREFIX/include/libhmsbeagle-1, verify that the argument to --with-beaglelib is correct.])
 else
 	if ! test -f "$NCL_INC_DIR/ncl/nxsdefs.h" ; then
-    	AC_MSG_ERROR([beaglelib version 1.0 or higher is a prerequisite for building pytbeaglehon. Expecting a directory called $BEAGLE_PREFIX/include/libhmsbeagle-1.0, verify that the argument to --with-beagle is correct.])
+    	AC_MSG_ERROR([NCL version 2.1 or higher is a prerequisite for building pytbeaglehon. Expecting a file at $NCL_INC_DIR/ncl/nxsdefs.h, verify that the argument to --with-ncl is correct.])
 	fi
 fi
 
