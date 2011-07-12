@@ -571,7 +571,7 @@ void freeLikeCalcInstanceFields(struct LikeCalculatorInstance * inst) {
     inst->patternWeights = 0L;
     
 	for (i = 0; i < inst->numInstRateModels; ++i) {
-		if (inst->probModelArray[i] != 0L) {
+		if (inst->probModelArray && inst->probModelArray[i] != 0L) {
 			Py_DECREF(inst->probModelArray[i]);
 			/* cdsctm_dtor(inst->probModelArray[i]); */
 			inst->probModelArray[i] = 0L;

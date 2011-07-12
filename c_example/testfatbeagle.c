@@ -44,7 +44,9 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     char n[81];
     char description[81];
     long optsFlags, reqFlags, prefFlags, instanceHandle1, instanceHandle2;
+    long prefFlags0, reqFlags0;
     int rc;
+    int recNum;
     unsigned i, numModels;
     const DSCTModelObj ** modArray = 0L;
     if (gVerbose)
@@ -57,15 +59,22 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
     }
     else
         *numPasses += 1;
-    rc = getComputationalResourceDetails(0, n, description, &optsFlags, &reqFlags);
-    if (rc == 0) {
-        *numPasses += 1;
-        if (gVerbose)
-            fprintf(stderr, "First resource details:\n  name = %s\n  desc = %s\n  optFlags  = %ld\n  reqFlags = %ld\n", n, description, optsFlags, reqFlags);
-    }
-    else {
-        *numErrors += 1;
-        fprintf(stderr, "getComputationalResourceDetails returned %d\n", rc);
+    
+    for (recNum = 0; recNum < i ; ++recNum) {
+        rc = getComputationalResourceDetails(recNum, n, description, &optsFlags, &reqFlags);
+        if (rc == 0) {
+            *numPasses += 1;
+            if (gVerbose)
+                fprintf(stderr, "Resource details for resource %d:\n  name = %s\n  desc = %s\n  optFlags  = %ld\n  reqFlags = %ld\n", recNum, n, description, optsFlags, reqFlags);
+        }
+        else {
+            *numErrors += 1;
+            fprintf(stderr, "getComputationalResourceDetails returned %d\n", rc);
+        }
+        if (recNum == 0) {
+            prefFlags0 = prefFlags0;
+            reqFlags0 = reqFlags;
+        }
     }
     rc = getComputationalResourceDetails(i, n, description, &optsFlags, &reqFlags);
     if (rc != 0) {
@@ -89,10 +98,11 @@ void testCalcInstances(unsigned * numPasses, unsigned * numErrors) {
             2, /* num of eigen solutions stored */ 
             1, /* num rescalers */
             0, /* the index of the computational resource to use */
-            prefFlags,
-            reqFlags); /* the beagle flags (see above) required of the computational resource */
+            prefFlags0,
+            reqFlags0); /* the beagle flags (see above) required of the computational resource */
     if (instanceHandle1 >= 0) {
         *numPasses += 1;
+        fprintf(stderr, "createLikelihoodCalcInstance succeeded %d.\n", i);
     }
     else {
         *numErrors += 1;
