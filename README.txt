@@ -1,7 +1,8 @@
-PYTbeagleHON is a python wrapper around the beaglelib library for likelihood
+pytbeaglehon (pronounced "beagle in python") is a python wrapper around the
+    beaglelib library (http://code.google.com/p/beagle-lib/ )for likelihood
     computations in the domain of phylogenetics.
     
-PYTbeagleHON is written by Mark T. Holder (see License), but it also provides
+pytbeaglehon is written by Mark T. Holder (see License), but it also provides
     extensions to the beagle API. These extensions include code taken from PAML
     (by Ziheng Yang) for calculations associated with gamma-distributed 
     rate-heterogeneity, and code taken from MrBayes (by John Huelsenbeck, 
