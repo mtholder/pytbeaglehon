@@ -15,34 +15,32 @@ extern "C"
 #include "discrete_state_model.h"
 
 
-/* Each LikeCalculatorInstance contains the internal storage needed to
-    calculate likelihoods for one subset in a (possibly) partitioned matrix.
-
-    Multiple Models may be associate with the instance, but all model share the
-    same number of states.
-
-*/
+/*! Each LikeCalculatorInstance contains the internal storage needed to
+ *      calculate likelihoods for one subset in a (possibly) partitioned matrix.
+ *  Multiple models may be associated with the instance, but all model share the
+ *      same number of states.
+ *  All of the fields should be viewed as "read-only"
+ */
 struct LikeCalculatorInstance {
     int beagleInstanceIndex;
 
-	unsigned int numLeaves;
-	unsigned long numPatterns;
-	double * patternWeights;
-	unsigned int numStates;
-	unsigned int numRateCategories;
-	unsigned int numStateCodeArrays;
-	unsigned int numPartialStructs;
-	unsigned int numProbMats;
-	unsigned int numRescalingsMultipliers;
-	int resourceIndex;
-	long resourcePref;
-	long resourceReq;
-	int beagleInstanceCreated;
+	unsigned int numLeaves; /**< The number of leaves in the tree. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned long numPatterns; /**< The number of data patterns. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	double * patternWeights; /**< The 0L or a pointer to an array of length `numPatterns` that holds the weight for each pattern. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned int numStates; /**< The number of states in the model. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned int numStateCodeArrays; /**< The number of of data structs to allocate for storing leaf data. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned int numPartialStructs; /**< The f data structures to allocate to store partial likelihood arrays. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned int numProbMats; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	unsigned int numRescalingsMultipliers; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	int resourceIndex; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	long resourcePref; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	long resourceReq; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	int beagleInstanceCreated; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
 
 
-	unsigned int numInstRateModels;
-	DSCTModelObj ** probModelArray;
-	const ASRVObj ** asrvAliasForEachModel; /* length = numInstRateModels */
+	unsigned int numInstRateModels; /**< The number of "slots" for DSCTModelObj objects. Set in #createLikelihoodCalcInstance by the argument of the same name */
+	DSCTModelObj ** probModelArray; /**< The . Set in #createLikelihoodCalcInstance by the argument of the same name */
+	const ASRVObj ** asrvAliasForEachModel; /**< The . Length == numInstRateModels */
     
 	unsigned int numEigenStorage;
 	EigenSolutionStruct ** eigenSolutionStructs;
@@ -64,8 +62,8 @@ struct LikeCalculatorInstance {
 };
 
 
-struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
-int calcPrMatsForLCI(struct LikeCalculatorInstance * lci, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
+const struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
+int calcPrMatsForLCI(const struct LikeCalculatorInstance * lci, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
 
 #if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
         int getTraceModeModelIndex(struct LikeCalculatorInstance * LCI, DSCTModelObj * m);

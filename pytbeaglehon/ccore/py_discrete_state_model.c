@@ -20,7 +20,7 @@ PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
 	
 	to_return = tupleToDoubleMatrix(tuple_obj, dsct_model_obj->qMat, dim, dim, 1);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
+        const struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
         PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = LCI->probModelArray[%d];\n", getTraceModeModelIndex(LCI, dsct_model_obj));
     	if (dim == 4) {
             PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[0][0] = %.10lf; dsct_model_obj->qMat[0][1] = %.10lf; dsct_model_obj->qMat[0][2] = %.10lf; dsct_model_obj->qMat[0][3] = %.10lf;\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
@@ -43,7 +43,7 @@ PyObject* cdsctm_calc_eigens(PyObject *self, PyObject *args) {
 		return 0L;
 	dsct_model_obj = (DSCTModelObj *)(dsct_model_py_obj);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
-        struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
+        const struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
         PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = LCI->probModelArray[%d];\n", getTraceModeModelIndex(LCI, dsct_model_obj));
     	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj->eigenBufferIndex=%d; dsct_model_obj->eigenCalcIsDirty = 1;\n", eigenIndex);
     	PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ rc = recalc_eigen_mat(dsct_model_obj); if (rc == 0) {fprintf(stderr, \"recalc_eigen_mat failed\"); return 1;}\n");
@@ -60,7 +60,7 @@ PyObject* cdsctm_get_pr_mats(PyObject *self, PyObject *args) {
     long handle;
     unsigned i, numToCalc;
 	PyObject * pr_mat_ind_list_obj;
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     PyObject *lp;
 	PyObject *el_obj;
 
@@ -105,7 +105,7 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
     int eigenIndex;
     unsigned numToCalc;
 	PyObject * edge_len_list_obj, * pr_mat_ind_list_obj;
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
 	PYTBEAGLEHON_DEBUG_PRINTF("Entering cdsctm_calc_pr_mats\n");
 	if (!PyArg_ParseTuple(args, "liO!O!", &handle, &eigenIndex, &PyList_Type, &edge_len_list_obj, &PyList_Type, &pr_mat_ind_list_obj))
 		return 0L;

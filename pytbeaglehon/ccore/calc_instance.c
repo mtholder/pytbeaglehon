@@ -5,6 +5,7 @@
 #include <libhmsbeagle/beagle.h>
 #include "internal_like_calc_env.h"
 
+static struct LikeCalculatorInstance * getLikeCalculatorInstanceNonConst(long handle);
 
 char * convertBeagleEnumToCString(long beagleFlags, char * buffer) {
     if (buffer == 0L)
@@ -138,7 +139,19 @@ BeagleOperation partialOperation(int destPartial, int outRescaler, int inRescale
 static struct LikeCalculatorInstance ** gAllInstances = 0;
 static unsigned gLenAllInstancesArray = 0;
 
-struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
+/*!
+ * \returns a pointer to a previously created LikeCalculatorInstance or 0L if
+ *      the `handle` is out of range.  
+ *
+ *  `handle` should have been obtained from a previous call to #createLikelihoodCalcInstance
+ */
+const struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
+	if (handle < gLenAllInstancesArray);
+        return gAllInstances[handle];
+    return 0L;
+}
+
+struct LikeCalculatorInstance * getLikeCalculatorInstanceNonConst(long handle) {
 	if (handle < gLenAllInstancesArray);
         return gAllInstances[handle];
     return 0L;
@@ -147,7 +160,7 @@ struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle) {
 
 /** `numInstRateModels` is filled on output. */
 const DSCTModelObj ** getModelList(long instanceHandle, unsigned int * numModels) {
-    struct LikeCalculatorInstance * lci =  getLikeCalculatorInstance(instanceHandle);
+    const struct LikeCalculatorInstance * lci =  getLikeCalculatorInstance(instanceHandle);
     if (lci == 0L) {
         if (numModels)
             *numModels = 0;
@@ -277,7 +290,6 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 		PYTBEAGLEHON_DEBUG_PRINTF("Could not alloc probModelArray in allocateLikeCalcInstanceFields\n");
 		goto errorExit;
 	}
-    t->numRateCategories = 0;
     for (i = 0; i < t->numInstRateModels; ++i) {
 		t->probModelArray[i] = dsctModelNew(t->numStates);
 		if (t->probModelArray[i] == 0L) {
@@ -288,14 +300,9 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 		t->probModelArray[i]->likeCalcInstanceAlias = t;
         if (asrvAliasForEachModel != 0) {
             t->asrvAliasForEachModel[i] = asrvAliasForEachModel[i];
-            if (t->asrvAliasForEachModel[i])
-                t->numRateCategories += t->asrvAliasForEachModel[i]->n;
-            else
-                t->numRateCategories += 1; /* no rate het */
         }
         else {
             t->asrvAliasForEachModel[i] = 0L;
-            t->numRateCategories += 1; /* no rate het */
         }
 	}
 
@@ -403,7 +410,7 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
                                                   t->numPatterns,
                                                   t->numEigenStorage,
                                                   t->numProbMats,
-                                                  1, /* we take care of the asrv at a higher level t->numRateCategories, */
+                                                  1, /* we take care of the asrv at a higher level (through ASRV objects), */
                                                   t->numRescalingsMultipliers,
                                                   resourceListPtr,
                                                   resourceListLen,
@@ -457,9 +464,18 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 }
 
 
+/*!
+ * This function should be called for every `handle` created by #createLikelihoodCalcInstance
+ * It acts as the 'free' function for the resources, so it will invalidate
+ *  all pointers to memory that was contained by the LikeCalculatorInstance that
+ *  `handle` refers to.
+ *
+ * \returns 0 on success (or `BEAGLE_ERROR_OUT_OF_RANGE` if the `handle` is 
+ *     out of range or refers to a previously freed instance.
+ */
 
 int freeLikeCalculatorInstance(long handle) {
-	struct LikeCalculatorInstance * inst = getLikeCalculatorInstance(handle);
+	struct LikeCalculatorInstance * inst = getLikeCalculatorInstanceNonConst(handle);
 	PYTBEAGLEHON_DEBUG_PRINTF2("freeLikeCalculatorInstance(%ld) -> %ld\n", handle, (long) inst);
 	if (inst) {
 		freeLikeCalcInstanceFields(inst);
@@ -484,7 +500,7 @@ int freeLikeCalculatorInstance(long handle) {
  *   instance.
  */
 long createLikelihoodCalcInstance(
-        unsigned int numLeaves,  /**< I'm not sure why beagle needs to know this, but... */
+        unsigned int numLeaves,  /**< The number of leaves in the trees that will be the focus of calculations */
         unsigned long numPatterns, /**< the number of data patterns in this subset */
         const double * patternWeights, /**< array of weights.  Length must be numPatterns */
         unsigned int numStates, /**< the number of states in the data */
@@ -503,7 +519,7 @@ long createLikelihoodCalcInstance(
 	int rc; 
 	long handle = createNewLikeCalculatorInstance();
 	if (handle >= 0) {
-		calcInstancePtr = getLikeCalculatorInstance(handle);
+		calcInstancePtr = getLikeCalculatorInstanceNonConst(handle);
 		assert(calcInstancePtr != 0L);
 		zeroLikeCalcInstanceFields(calcInstancePtr);
 		calcInstancePtr->numLeaves = numLeaves;
@@ -538,7 +554,7 @@ long createLikelihoodCalcInstance(
 
 int setPatternWeights(long handle, const double * patternWeights) {
     unsigned i;
-    struct LikeCalculatorInstance * calcInstancePtr = getLikeCalculatorInstance(handle);
+    struct LikeCalculatorInstance * calcInstancePtr = getLikeCalculatorInstanceNonConst(handle);
     if (calcInstancePtr == 0L) {
         PYTBEAGLEHON_DEBUG_PRINTF1("No LikeCalculatorInstance for handle=%ld. Returning...\n", handle);
         return BEAGLE_ERROR_OUT_OF_RANGE;
@@ -718,14 +734,15 @@ int calcPrMatsForHandle(long handle,
                unsigned numToCalc,
                const double * edgeLenArray,
                const int * probMatIndexArray) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || numToCalc > lci->numProbMats) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
     return calcPrMatsForLCI(lci, eigenIndex, numToCalc, edgeLenArray, probMatIndexArray);
 }
-int calcPrMatsForLCI(struct LikeCalculatorInstance * lci, 
+
+int calcPrMatsForLCI(const struct LikeCalculatorInstance * lci, 
                int eigenIndex,
                unsigned numToCalc,
                const double * edgeLenArray,
@@ -761,7 +778,7 @@ int calcPrMatsForLCI(struct LikeCalculatorInstance * lci,
 
 
 int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || probMatIndex >= lci->numProbMats) {
@@ -780,7 +797,7 @@ int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
 }
 
 int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCodes) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || stateCodeArrayIndex >= lci->numStateCodeArrays) {
@@ -800,7 +817,7 @@ int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCod
 
 
 int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, const int * waitPartialIndex, int numPartialsToWaitFor) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc = BEAGLE_SUCCESS;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || numOps >= lci->numPartialStructs) {
@@ -843,7 +860,7 @@ int calcPartials(long handle, const BeagleOperation * opArray, unsigned numOps, 
 
 int setSingletonCategoryWeights(long handle, const int * indexList, const double *wtList, int numCateg) {
     int i;
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc = BEAGLE_SUCCESS;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || numCateg >= lci->numEigenStorage) {
@@ -869,7 +886,7 @@ int setSingletonCategoryWeights(long handle, const int * indexList, const double
 
 
 int setStateFreq(long handle, int bufferIndex, const double *freq) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc = BEAGLE_SUCCESS;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || bufferIndex >= lci->numEigenStorage) {
@@ -896,7 +913,7 @@ int calcRootLnL(long handle,
                 const int * rootRescalerIndex, 
                 int arrayLength,
                 double * lnL) {
-    struct LikeCalculatorInstance * lci;
+    const struct LikeCalculatorInstance * lci;
     int rc = BEAGLE_SUCCESS;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || arrayLength >= lci->numEigenStorage) {

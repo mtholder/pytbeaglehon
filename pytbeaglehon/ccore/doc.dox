@@ -1,5 +1,16 @@
 /*!
  * \mainpage
- * pytbeaglehon/fatbeagle 
- * See #createLikelihoodCalcInstance
+ * pytbeaglehon/fatbeagle function level documentation. 
+ * 
+ * If you built this documentation with Doxygen in the default directory, then
+ *   there should be a general intro at <a href="../index.html">../index.html</a>
+ * 
+ * Most functions are not documented (sorry about that...), but the following
+ *  functions that are the current "public" API are:
+ *   \li #createLikelihoodCalcInstance
+ *   \li #getLikeCalculatorInstance
+ *   \li #
+ *   \li #
+ *   \li #
+ *   \li #
  */

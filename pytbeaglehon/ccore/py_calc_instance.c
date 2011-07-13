@@ -200,7 +200,7 @@ PyObject* cPytBeagleHonInit(PyObject *self, PyObject *args) {
     	PYTBEAGLEHON_DEBUG_PRINTF4("int numProbMats=%d; int numEigenStorage=%d; int numRescalingsMultipliers=%d; int resourceIndex=%d; ",  numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex);
 	    PYTBEAGLEHON_DEBUG_PRINTF2("long resourcePref=%ld; long resourceReq=%ld;\n", resourcePref, resourceReq);
     	PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ long handle = createLikelihoodCalcInstance(numLeaves, numPatterns, patternWeights, numStates, numStateCodeArrays, numPartialStructs, numInstRateModels, asrvObjectArray, numProbMats, numEigenStorage, numRescalingsMultipliers, resourceIndex, resourcePref, resourceReq);\n");
-    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld); if (LCI == 0L) {fprintf(stderr, \"getLikeCalculatorInstance failed\"); return 1;}\n", handle);
+    	PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(%ld); if (LCI == 0L) {fprintf(stderr, \"getLikeCalculatorInstance failed\"); return 1;}\n", handle);
 #   endif
 
 	if (handle < 0) {
@@ -299,7 +299,7 @@ PyObject* pySetStateCodeArray(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "liO!", &handle, &stateCodeArrayIndex, &PyTuple_Type, &scTuple))
         return 0L;
     scArraySize = (unsigned) PyTuple_Size(scTuple);
-    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
     if (LCI == 0L) {
         PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
         return 0L;
@@ -344,7 +344,7 @@ PyObject* pyCalcPartials(PyObject *self, PyObject *args) {
         return 0L;
     opArraySize = (unsigned) PyList_Size(opList);
     waitTupleSize = (unsigned) PyTuple_Size(waitTuple);
-    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
     if (LCI == 0L) {
         PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
         return 0L;
@@ -449,7 +449,7 @@ PyObject* pySetStateFreq(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "liO!", &handle, &eigenInd, &PyTuple_Type, &weightTuple))
         return 0L;
     weightTupleSize = (unsigned) PyTuple_Size(weightTuple);
-    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
     if (LCI == 0L) {
         PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
         return 0L;
@@ -511,7 +511,7 @@ PyObject* pyCalcRootLnLikelihood(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_IndexError, "Expecting the number of root partials to equal the number of rescaler buffer indices");
         return 0L;
     }
-    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
     if (LCI == 0L) {
         PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
         return 0L;
@@ -570,7 +570,7 @@ PyObject* pySetSingletonCatWts(PyObject *self, PyObject *args) {
         PyErr_SetString(PyExc_IndexError, "Expecting the index list and weight list to have the same length");
         return 0L;
     }
-    struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
+    const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(handle);
     if (LCI == 0L) {
         PyErr_SetString(PyExc_IndexError, "Invalid likelihood instance index");
         return 0L;
