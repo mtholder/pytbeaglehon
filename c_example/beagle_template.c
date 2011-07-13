@@ -3,7 +3,10 @@
 #include <assert.h>
 #include <libhmsbeagle/beagle.h>
 #include "pytbeaglehon/ccore/phylo_util.h"
-
+#include "pytbeaglehon/ccore/asrv.h"
+#include "pytbeaglehon/ccore/calc_instance.h"
+#include "pytbeaglehon/ccore/discrete_state_model.h"
+#include "pytbeaglehon/ccore/internal_like_calc_env.h"
 
 void writeProbMat(int instance, int pmatind, double ** pmatBuffer, double edgeLen) {
     int j, k;
