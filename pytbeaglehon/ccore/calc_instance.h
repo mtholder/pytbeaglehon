@@ -24,35 +24,31 @@ int getComputationalResourceDetails(int resourceIndex,
                                           long * requiredFlags /* as beagle flags */
                                           );
 
+ 
 /* Beagle Flags
-    BEAGLE_FLAG_PRECISION_SINGLE    = 1 << 0,    < Single precision computation 
-    BEAGLE_FLAG_PRECISION_DOUBLE    = 1 << 1,    < Double precision computation 
+ *    BEAGLE_FLAG_PRECISION_SINGLE    = 1 << 0,    < Single precision computation 
+ *    BEAGLE_FLAG_PRECISION_DOUBLE    = 1 << 1,    < Double precision computation 
+ *    BEAGLE_FLAG_COMPUTATION_SYNCH   = 1 << 2,    < Synchronous computation (blocking) 
+ *    BEAGLE_FLAG_COMPUTATION_ASYNCH  = 1 << 3,    < Asynchronous computation (non-blocking)   
+ *    BEAGLE_FLAG_EIGEN_REAL          = 1 << 4,    < Real eigenvalue computation 
+ *    BEAGLE_FLAG_EIGEN_COMPLEX       = 1 << 5,    < Complex eigenvalue computation 
+ *    BEAGLE_FLAG_SCALING_MANUAL      = 1 << 6,    < Manual scaling 
+ *    BEAGLE_FLAG_SCALING_AUTO        = 1 << 7,    < Auto-scaling on 
+ *    BEAGLE_FLAG_SCALING_ALWAYS      = 1 << 8,    < Scale at every updatePartials 
+ *    BEAGLE_FLAG_SCALING_DYNAMIC     = 1 << 19,   < Manual scaling with dynamic checking    
+ *    BEAGLE_FLAG_SCALERS_RAW         = 1 << 9,    < Save raw scalers 
+ *    BEAGLE_FLAG_SCALERS_LOG         = 1 << 10,   < Save log scalers   
+ *    BEAGLE_FLAG_VECTOR_SSE          = 1 << 11,   < SSE computation 
+ *    BEAGLE_FLAG_VECTOR_NONE         = 1 << 12,   < No vector computation    
+ *    BEAGLE_FLAG_THREADING_OPENMP    = 1 << 13,   < OpenMP threading 
+ *    BEAGLE_FLAG_THREADING_NONE      = 1 << 14,   < No threading   
+ *    BEAGLE_FLAG_PROCESSOR_CPU       = 1 << 15,   < Use CPU as main processor 
+ *    BEAGLE_FLAG_PROCESSOR_GPU       = 1 << 16,   < Use GPU as main processor 
+ *    BEAGLE_FLAG_PROCESSOR_FPGA      = 1 << 17,   < Use FPGA as main processor 
+ *    BEAGLE_FLAG_PROCESSOR_CELL      = 1 << 18    < Use Cell as main processor 
+ */
+ 
 
-    BEAGLE_FLAG_COMPUTATION_SYNCH   = 1 << 2,    < Synchronous computation (blocking) 
-    BEAGLE_FLAG_COMPUTATION_ASYNCH  = 1 << 3,    < Asynchronous computation (non-blocking) 
-    
-    BEAGLE_FLAG_EIGEN_REAL          = 1 << 4,    < Real eigenvalue computation 
-    BEAGLE_FLAG_EIGEN_COMPLEX       = 1 << 5,    < Complex eigenvalue computation 
-
-    BEAGLE_FLAG_SCALING_MANUAL      = 1 << 6,    < Manual scaling 
-    BEAGLE_FLAG_SCALING_AUTO        = 1 << 7,    < Auto-scaling on 
-    BEAGLE_FLAG_SCALING_ALWAYS      = 1 << 8,    < Scale at every updatePartials 
-    BEAGLE_FLAG_SCALING_DYNAMIC     = 1 << 19,   < Manual scaling with dynamic checking  
-    
-    BEAGLE_FLAG_SCALERS_RAW         = 1 << 9,    < Save raw scalers 
-    BEAGLE_FLAG_SCALERS_LOG         = 1 << 10,   < Save log scalers 
-    
-    BEAGLE_FLAG_VECTOR_SSE          = 1 << 11,   < SSE computation 
-    BEAGLE_FLAG_VECTOR_NONE         = 1 << 12,   < No vector computation 
-    
-    BEAGLE_FLAG_THREADING_OPENMP    = 1 << 13,   < OpenMP threading 
-    BEAGLE_FLAG_THREADING_NONE      = 1 << 14,   < No threading 
-    
-    BEAGLE_FLAG_PROCESSOR_CPU       = 1 << 15,   < Use CPU as main processor 
-    BEAGLE_FLAG_PROCESSOR_GPU       = 1 << 16,   < Use GPU as main processor 
-    BEAGLE_FLAG_PROCESSOR_FPGA      = 1 << 17,   < Use FPGA as main processor 
-    BEAGLE_FLAG_PROCESSOR_CELL      = 1 << 18    < Use Cell as main processor 
-*/
 /* Allocates a likelihood calculator of the appropriate size, and returns its handle
     negative return values indicate errors.
 */
@@ -86,7 +82,7 @@ int setPatternWeights(long likeCalcHandle, const double * patternWeights);
     at `eigenIndex` using the branch lengths in the array `edgeLenArray` and stores
     the matrices in `probMatIndexArray`
 \returns 0 or BeagleReturnCode for failure */
-int calcPrMats(long handle, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
+int calcPrMatsForHandle(long handle, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
 int fetchPrMat(long handle, int probMatIndex, double * flattenedMat);
 
 int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_codes);

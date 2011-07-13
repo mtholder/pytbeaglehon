@@ -10,7 +10,7 @@ With the exception of some code written by others (see below). The code is
 
 Code by others
 ==============
-Code by others (all in the C-code in the cPhyProb/ccore directory)
+Code by others (all in the C-code in the pytbeaglehon/ccore directory)
 C-Extension were written by adapting Alex Martelli's example code in the 
   Python Cookbook Section 17.1
 
@@ -25,8 +25,8 @@ Eigensystem code from MrBayes 3.2 Copyright 2002-2007
   Paul van der Mark
 updated from the CVS Repository: mrbayes from the root:
 :pserver:anonymous@mrbayes.cvs.sourceforge.net:/cvsroot/mrbayes
-on 2007-Oct-05
-Some of that code was written (or translated from FORTRAN) by:
+on 2007-Oct-05.
+Some of that code was written (or translated from FORTRAN) by
   David Swofford 
 
 pytbeaglehon is only useful if you have a library installed that fulfills the 

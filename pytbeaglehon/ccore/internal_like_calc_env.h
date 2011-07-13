@@ -65,6 +65,7 @@ struct LikeCalculatorInstance {
 
 
 struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
+int calcPrMatsForLCI(struct LikeCalculatorInstance * lci, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
 
 #if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
         int getTraceModeModelIndex(struct LikeCalculatorInstance * LCI, DSCTModelObj * m);

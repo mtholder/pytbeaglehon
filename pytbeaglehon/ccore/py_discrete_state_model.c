@@ -131,10 +131,10 @@ PyObject* cdsctm_calc_pr_mats(PyObject *self, PyObject *args) {
 	    for (i = 0; i < numToCalc; ++i) {
     	    PYTBEAGLEHON_DEBUG_PRINTF2("LCI->probMatIndexScratch[%d] = %d; ", i, lci->probMatIndexScratch[i]);
         }
-	    PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ rc = calcPrMats(handle, eigenIndex, numToCalc, LCI->edgeLenScratch, LCI->probMatIndexScratch); if (rc != 0) {return rc;}\n");
+	    PYTBEAGLEHON_DEBUG_PRINTF("\n/* cAPI Call */ rc = calcPrMatsForHandle(handle, eigenIndex, numToCalc, LCI->edgeLenScratch, LCI->probMatIndexScratch); if (rc != 0) {return rc;}\n");
 #   endif
-	if (calcPrMats(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
-	    PyErr_SetString(PyExc_RuntimeError, "calcPrMats call failed");
+	if (calcPrMatsForHandle(handle, eigenIndex, numToCalc, lci->edgeLenScratch, lci->probMatIndexScratch) != BEAGLE_SUCCESS) {
+	    PyErr_SetString(PyExc_RuntimeError, "calcPrMatsForHandle call failed");
 	    return 0L;
 	}
 	return none();

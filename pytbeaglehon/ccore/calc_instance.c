@@ -474,21 +474,31 @@ int freeLikeCalculatorInstance(long handle) {
 
 /* public methods below here */
 
+/*!
+ * This function call allows beagle to allocate the memory required to perform
+ *   its calculations.
+ * \returns a negative number (an error code from beagle.h BeagleReturnCodes)
+ *    on failure, or a non-negative number that is the "handle" to the instance
+ *   created.  This handle can be used in getLikeCalculatorInstance or in 
+ *   other calls within the pytbeaglehon/fatbeagle library to refer to this 
+ *   instance.
+ */
 long createLikelihoodCalcInstance(
-        unsigned int numLeaves,  /* I'm not sure why beagle needs to know this, but... */
-        unsigned long numPatterns, /* the number of data patterns in this subset */
-        const double * patternWeights, /* array of weights.  Length must be numPatterns */
-        unsigned int numStates, /* the number of states in the data */
-        unsigned int numStateCodeArrays, /* The number of data structs to allocate for storing leaf data. This is often equal to the number of leaves. If you have partial ambiguity in a tip, then you'll need to use a "partial" rather than a "state code" array for its storage.*/
-        unsigned int numPartialStructs,  /* The number of data structures to allocate to store partial likelihood arrays. */
-        unsigned int numInstRateModels, /* the number of distinct models (q-matrices) to allocated */
-        const ASRVObj ** asrvAliasForEachModel, /* 0L or an array of length numInstRateModels. 0L indicates no rate heterogeneity for any model. Otherwise this should be an array of length numInstRateModels of pointers to the asrv object used for each model.  This will determine the number of probability matrices stored in the calculator instance */
-        const unsigned int numProbMatsToAllocate, /* Number of transition probability matrices to allocate */ 
-        unsigned int numEigenStorageStructs, /* number of eigen solution storage structures to allocate -- should be as large as the number of numInstRateModels (unless you are going to recalculate the eigensolution each time) */ 
-        unsigned int numRescalingsMultipliers, /* the number of arrays to allocate for avoiding underflow */
-        int resourceIndex, /* the index of the computational resource to use */
-        long resourcePref,
-        long resourceReq) {
+        unsigned int numLeaves,  /**< I'm not sure why beagle needs to know this, but... */
+        unsigned long numPatterns, /**< the number of data patterns in this subset */
+        const double * patternWeights, /**< array of weights.  Length must be numPatterns */
+        unsigned int numStates, /**< the number of states in the data */
+        unsigned int numStateCodeArrays, /**< The number of data structs to allocate for storing leaf data. This is often equal to the number of leaves. If you have partial ambiguity in a tip, then you'll need to use a "partial" rather than a "state code" array for its storage.*/
+        unsigned int numPartialStructs,  /**< The number of data structures to allocate to store partial likelihood arrays. */
+        unsigned int numInstRateModels, /**< the number of distinct models (q-matrices) to allocated */
+        const ASRVObj ** asrvAliasForEachModel, /**< 0L or an array of length numInstRateModels. 0L indicates no rate heterogeneity for any model. Otherwise this should be an array of length numInstRateModels of pointers to the asrv object used for each model.  This will determine the number of probability matrices stored in the calculator instance */
+        const unsigned int numProbMatsToAllocate, /**< Number of transition probability matrices to allocate */ 
+        unsigned int numEigenStorageStructs, /**< number of eigen solution storage structures to allocate -- should be as large as the number of numInstRateModels (unless you are going to recalculate the eigensolution each time) */ 
+        unsigned int numRescalingsMultipliers, /**< the number of arrays to allocate for avoiding underflow */
+        int resourceIndex, /**< the index of the computational resource to use */
+        long resourcePref, /**< Union of the preferred BeagleFlags bits */
+        long resourceReq) /**< Union of the required BeagleFlags bits */ 
+        { 
 	struct LikeCalculatorInstance * calcInstancePtr;
 	int rc; 
 	long handle = createNewLikeCalculatorInstance();
@@ -703,18 +713,25 @@ int getComputationalResourceDetails(int resourceIndex,
 }
 
 
-int calcPrMats(long handle, 
+int calcPrMatsForHandle(long handle, 
                int eigenIndex,
                unsigned numToCalc,
                const double * edgeLenArray,
                const int * probMatIndexArray) {
     struct LikeCalculatorInstance * lci;
-    EigenSolutionStruct * ess;
-    int bEigen;
     lci = getLikeCalculatorInstance(handle);
     if (lci == 0L || numToCalc > lci->numProbMats) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
+    return calcPrMatsForLCI(lci, eigenIndex, numToCalc, edgeLenArray, probMatIndexArray);
+}
+int calcPrMatsForLCI(struct LikeCalculatorInstance * lci, 
+               int eigenIndex,
+               unsigned numToCalc,
+               const double * edgeLenArray,
+               const int * probMatIndexArray) {
+    EigenSolutionStruct * ess;
+    int bEigen;
     if (eigenIndex < 0 || eigenIndex >= lci->numEigenStorage) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }

@@ -14,7 +14,7 @@
 		<td>
 			<table border="0" width="100%">
 				<tr>
-					<td align="left" class="classy">FatBeagle Wrapper around beagle-lib</td>
+					<td align="left" class="classy">FatBeagle Wrapper around <code>libhmsbeagle</code></td>
 					<td align="right" class="classy">
 						<a href="index.html">home</a> | <a href="classes.html">classes</a> | <a href="functions.html">functions</a>
 					</td>
@@ -23,21 +23,82 @@
 		</td>
 	</tr>
 </table>
-<h1><a name="top">FatBeagle Library</a></h1> <h3>by Mark T. Holder</h3>
-<p></p>
-<p>The <a href="./funcdocs/index.html">current API documentation</a> is generated
-from doxygen, but also includes high level discussion about recommended usage patterns.</p>
+<h1><a name="top">FatBeagle Library</a></h1>
+<p>FatBeagle is a wrapper than <code>libhmsbeagle</code> (see 
+<a href="http://code.google.com/p/beagle-lib">http://code.google.com/p/beagle-lib</a>).
+(Ironically enough, FatBeagle is actually a very thin wrapper around <code>libhmsbeagle</code>;
+most of the hard work is done by <code>libhmsbeagle</code>).
+</p>
+<p>The goals of FatBeagle are to:</p>
+<ol>
+    <li>provide a slightly richer interface than <code>libhmsbeagle</code>. In particular, FatBeagle will 
+calculate the eigensolution from an instantaneous rate matrix, and also provides
+functions that make it easier to apply some commonly-used forms of among-site rate variation. </li>
+    <li>provide a C-language adaptor for the python-C-extension package, 
+<a href="https://github.com/mtholder/pytbeaglehon">pytbeaglehon</a>. FatBeagle is
+compiled from the same code-base that is the C-part of <code>pytbeaglehon</code>.</li>
+</ol>
+
+<p>The documentation is currently very poor.
+Some <a href="./funcdocs/index.html">function-level documentation</a> is generated
+from doxygen.
+</p>
+
+<p>Because the implementation of the <code>libhmsbeagle</code> API could be 
+operating in what amounts to a distinct address space (e.g. if you are using a 
+GPU resource through <code>libhmsbeagle</code>, the memory associated with 
+partial likelihood arrays will be stored on the GPU, and not easily accessible 
+by the CPU), you must initialize an environment "upfront."
+This requires to steps:
+</p>
+<ol>
+    <li>A call to createLikelihoodCalcInstance which allocates the necessary memory and returns a integer handle;</li>
+    <li>A call te getLikeCalculatorInstance to obtain a pointer to a LikeCalculatorInstance object that provides an interface to the environment for likelihood calculations</li>
+</ol>
+
+
+
+<h3>Authorship/Acknowledgments</h3>
+<p>Most of the code was written by Mark T. Holder. 
+The C-code extensions to python (in the <code>pytbeaglehon/ccore</code> directory)
+were written by adapting Alex Martelli's example code in the 
+Python Cookbook Section 17.1</p>
+
+<p>Among-site rate variation code based on code from the PAML package:
+Yang, Z.  2007.  PAML 4: a program package for phylogenetic analysis by 
+  maximum likelihood.  Molecular Biology and Evolution 24: 1586-1591 
+  (<a href="http://abacus.gene.ucl.ac.uk/software/paml.html">http://abacus.gene.ucl.ac.uk/software/paml.html</a>)
+</p>
+
+<p>Eigensystem code from MrBayes 3.2 Copyright 2002-2007. John P. Huelsenbeck, Fredrik Ronquist, and  Paul van der Mark
+updated from the CVS Repository: mrbayes from the root :pserver:anonymous@mrbayes.cvs.sourceforge.net:/cvsroot/mrbayes
+on 2007-Oct-05. Some of that code was written (or translated from FORTRAN) by David Swofford.
+</p>
+
+<p><code>pytbeaglehon</code> is only useful if you have a library installed that fulfills the 
+beaglelib API for likelihood computations (
+see <a href="http://code.google.com/p/beagle-lib">http://code.google.com/p/beagle-lib</a> ).
+<code>pytbeaglehon</code> links to your copy
+of <code>libhmsbeagle</code>, but does not contain code from beagle.
+</p>
+
+<p>The code in <code>pytbeaglehon</code> written by Mark Holder is licensed under the 
+GNU public license version 3.0 (this is because MrBayes is released under this 
+license). 
+</p>
 
 <h2><a name="contactinfo">Contact Information</a></h2>
 <pre>
 Mark T. Holder, Assist. Professor
 Department of Ecology and Evolutionary Biology
 The University of Kansas
-Lawrence, KS 66049 U.S.A.
+Lawrence, KS 66045 U.S.A.
 
 Email: <a href="mailto:mtholder@ku.edu">mtholder@ku.edu</a>
 URL:   <a href="http://phylo.bio.ku.edu/mark-holder">http://phylo.bio.ku.edu/mark-holder</a>
 </pre>
+
+
 <!--#include FILE="footer.html"-->
 </body>
 </html>
