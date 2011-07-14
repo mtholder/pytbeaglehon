@@ -201,10 +201,45 @@ EigenSolutionStruct * getEigenSolutionStruct(DSCTModelObj * mod) {
 }
 
 
+/**
+ * Associates a model with an eigenIndex (client is responsible for making sure
+ *  that different DSCTModelObj do not clobber each other's eigen solution
+ *  memory).
+ *
+ *	\Returns 0 to indicate failure .
+ */
+int set_eigen_index_for_model(DSCTModelObj * dsct_model_obj, int eigenIndex) {
+	dsct_model_obj->eigenBufferIndex = eigenIndex;
+	dsct_model_obj->eigenCalcIsDirty = 1;
+	return 1;
+}
+
+/**
+ * Calculates the eigensystem and temporaries.  Returns 0 if any steps fail
+ *  or the complex eigenvalues are encountered.
+ *
+ * This is equivalent to calling:
+ *      #set_eigen_index_for_model(`dsct_model_obj`, `eigenIndex`);
+ *      #recalc_eigen_mat(`dsct_model_obj`)
+ *
+ * 
+ *
+ *	\Returns 0 to indicate failure (if this happens PyErr_SetString will have
+ *		been called).
+ */
+int calc_eigen_mat(DSCTModelObj * dsct_model_obj, int eigenIndex) {
+	if (set_eigen_index_for_model(dsct_model_obj, eigenIndex) == 0) {
+		PyErr_SetString(PyExc_RuntimeError, "Could not set eigen solution storage .");
+		return 0;
+	}
+	return recalc_eigen_mat(dsct_model_obj);
+}
 
 /**
  * Recalculates the eigensystem and temporaries.  Returns 0 if any steps fail
  *  or the complex eigenvalues are encountered.
+ *
+ * calc_eigen_mat or set_eigen_index_for_model must have been called first!
  *
  *	\Returns 0 to indicate failure (if this happens PyErr_SetString will have
  *		been called).

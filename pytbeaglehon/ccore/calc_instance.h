@@ -78,11 +78,14 @@ int freeLikeCalculatorInstance(long handle);
 \returns 0 or BeagleReturnCode for failure */
 int setPatternWeights(long likeCalcHandle, const double * patternWeights);
 
-/*  calculates `numToCalc` probability matrices from the eigen system stored 
-    at `eigenIndex` using the branch lengths in the array `edgeLenArray` and stores
-    the matrices in `probMatIndexArray`
-\returns 0 or BeagleReturnCode for failure */
+/*!
+ * Calculates `numToCalc` probability matrices from the eigen system stored 
+ *   at `eigenIndex` using the branch lengths in the array `edgeLenArray` and stores
+ *   the matrices in `probMatIndexArray`
+ * \returns 0 or BeagleReturnCode for failure 
+ */
 int calcPrMatsForHandle(long handle, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
+int setQMatForHandle(long handle, int probMatIndex, const double ** newQMat);
 int fetchPrMat(long handle, int probMatIndex, double * flattenedMat);
 
 int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * state_codes);

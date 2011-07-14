@@ -224,6 +224,7 @@ long createNewLikeCalculatorInstance(void) {
 	PYTBEAGLEHON_DEBUG_PRINTF2("New struct LikeCalculatorInstance at %ld stored in global array %d\n", (long) newInstance, destination);
 	if (newInstance == 0L)
 		goto errorExit;
+	newInstance->handleForSelf = destination;
 	gAllInstances[destination] = newInstance;
 	return (long) destination;
 	errorExit:
@@ -741,6 +742,41 @@ int calcPrMatsForHandle(long handle,
     }
     return calcPrMatsForLCI(lci, eigenIndex, numToCalc, edgeLenArray, probMatIndexArray);
 }
+
+
+/*!
+ * Copies the elements of `newQMat` into the Q-Matrix of the model at 
+ *  position `probMatIndex` of the LikeCalculatorInstance `handle` and flags
+ *  this model as needing to have its eigen solution recalculated.
+ *
+ * \returns 0 for success or a BEAGLE_ERROR_OUT_OF_RANGE code
+ */
+int setQMatForHandle(long handle, int probMatIndex, const double ** newQMat) {
+    const struct LikeCalculatorInstance * lci;
+    lci = getLikeCalculatorInstance(handle);
+    if (lci == 0L || probMatIndex >= lci->numProbMats) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    return setQMatForLCI(lci, probMatIndex, newQMat);
+}
+
+
+int setQMatForLCI(const struct LikeCalculatorInstance * lci, int probMatIndex, const double ** newQMat) {
+    DSCTModelObj * dsct_model_obj;
+    int i, j;
+    if (lci == 0L || probMatIndex >= lci->numProbMats) {
+		return BEAGLE_ERROR_OUT_OF_RANGE;
+    }
+    dsct_model_obj = lci->probModelArray[probMatIndex];
+    for (i = 0; i < lci->numStates; ++i) {
+        for (j = 0; j < lci->numStates; ++j) {
+            dsct_model_obj->qMat[i][j] = newQMat[i][j];
+        }
+    }
+    dsct_model_obj->eigenCalcIsDirty = 1;
+    return 0;
+}
+
 
 int calcPrMatsForLCI(const struct LikeCalculatorInstance * lci, 
                int eigenIndex,

@@ -23,7 +23,7 @@ extern "C"
  */
 struct LikeCalculatorInstance {
     int beagleInstanceIndex;
-
+    int handleForSelf; /**< The handle that applies to this LikeCalculatorInstance (the arg to #getLikeCalculatorInstance that would return this instance).  */
 	unsigned int numLeaves; /**< The number of leaves in the tree. Set in #createLikelihoodCalcInstance by the argument of the same name */
 	unsigned long numPatterns; /**< The number of data patterns. Set in #createLikelihoodCalcInstance by the argument of the same name */
 	double * patternWeights; /**< The 0L or a pointer to an array of length `numPatterns` that holds the weight for each pattern. Set in #createLikelihoodCalcInstance by the argument of the same name */
@@ -64,6 +64,7 @@ struct LikeCalculatorInstance {
 
 const struct LikeCalculatorInstance * getLikeCalculatorInstance(long handle);
 int calcPrMatsForLCI(const struct LikeCalculatorInstance * lci, int eigenIndex, unsigned numToCalc, const double * edgeLenArray, const int * probMatIndexArray);
+int setQMatForLCI(const struct LikeCalculatorInstance * lci, int probMatIndex, const double ** newQMat);
 
 #if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
         int getTraceModeModelIndex(struct LikeCalculatorInstance * LCI, DSCTModelObj * m);

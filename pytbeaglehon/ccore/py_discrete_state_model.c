@@ -21,13 +21,16 @@ PyObject* cdsctm_set_q_mat(PyObject *self, PyObject *args) {
 	to_return = tupleToDoubleMatrix(tuple_obj, dsct_model_obj->qMat, dim, dim, 1);
 #   if defined(API_TRACE_PRINTING) && API_TRACE_PRINTING
         const struct LikeCalculatorInstance *LCI = getLikeCalculatorInstance(0);
-        PYTBEAGLEHON_DEBUG_PRINTF1("/* cAPI Call */ dsct_model_obj = LCI->probModelArray[%d];\n", getTraceModeModelIndex(LCI, dsct_model_obj));
     	if (dim == 4) {
-            PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[0][0] = %.10lf; dsct_model_obj->qMat[0][1] = %.10lf; dsct_model_obj->qMat[0][2] = %.10lf; dsct_model_obj->qMat[0][3] = %.10lf;\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
-            PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[1][0] = %.10lf; dsct_model_obj->qMat[1][1] = %.10lf; dsct_model_obj->qMat[1][2] = %.10lf; dsct_model_obj->qMat[1][3] = %.10lf;\n", dsct_model_obj->qMat[1][0], dsct_model_obj->qMat[1][1], dsct_model_obj->qMat[1][2], dsct_model_obj->qMat[1][3]);
-            PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[2][0] = %.10lf; dsct_model_obj->qMat[2][1] = %.10lf; dsct_model_obj->qMat[2][2] = %.10lf; dsct_model_obj->qMat[2][3] = %.10lf;\n", dsct_model_obj->qMat[2][0], dsct_model_obj->qMat[2][1], dsct_model_obj->qMat[2][2], dsct_model_obj->qMat[2][3]);
-            PYTBEAGLEHON_DEBUG_PRINTF4("/* cAPI Call */ dsct_model_obj->qMat[3][0] = %.10lf; dsct_model_obj->qMat[3][1] = %.10lf; dsct_model_obj->qMat[3][2] = %.10lf; dsct_model_obj->qMat[3][3] = %.10lf;\n", dsct_model_obj->qMat[3][0], dsct_model_obj->qMat[3][1], dsct_model_obj->qMat[3][2], dsct_model_obj->qMat[3][3]);
-            PYTBEAGLEHON_DEBUG_PRINTF("/* cAPI Call */ dsct_model_obj->eigenCalcIsDirty = 1;\n");
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ const double row0[4] = {%.10lf, %.10lf, %.10lf, %.10lf};\n", dsct_model_obj->qMat[0][0], dsct_model_obj->qMat[0][1], dsct_model_obj->qMat[0][2], dsct_model_obj->qMat[0][3]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ const double row1[4] = {%.10lf, %.10lf, %.10lf, %.10lf};\n", dsct_model_obj->qMat[1][0], dsct_model_obj->qMat[1][1], dsct_model_obj->qMat[1][2], dsct_model_obj->qMat[1][3]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ const double row2[4] = {%.10lf, %.10lf, %.10lf, %.10lf};\n", dsct_model_obj->qMat[2][0], dsct_model_obj->qMat[2][1], dsct_model_obj->qMat[2][2], dsct_model_obj->qMat[2][3]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ const double row3[4] = {%.10lf, %.10lf, %.10lf, %.10lf};\n", dsct_model_obj->qMat[3][0], dsct_model_obj->qMat[3][1], dsct_model_obj->qMat[3][2], dsct_model_obj->qMat[3][3]);
+    	    PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ const double * mat[4] = {&row0[0], &row1[0], &row2[0], &row3[0]};\n");
+            PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ setQMatForHandle(%d, %d, &mat[0]);\n", LCI->handleForSelf getTraceModeModelIndex(LCI, dsct_model_obj));
+        }
+        else {
+            PYTBEAGLEHON_DEBUG_PRINTF2("/* cAPI Call */ setQMatForHandle(%d, %d, QMAT_GOESHERE);\n", LCI->handleForSelf getTraceModeModelIndex(LCI, dsct_model_obj));
         }
 #   endif
     dsct_model_obj->eigenCalcIsDirty = 1;
