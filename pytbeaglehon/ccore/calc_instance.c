@@ -405,19 +405,19 @@ long allocateLikeCalcInstanceFields(struct LikeCalculatorInstance * t, const ASR
 #   endif
     
     rc = beagleCreateInstance(t->numLeaves,
-                                                  t->numPartialStructs,
-                                                  t->numStateCodeArrays,
-                                                  t->numStates,
-                                                  t->numPatterns,
-                                                  t->numEigenStorage,
-                                                  t->numProbMats,
-                                                  1, /* we take care of the asrv at a higher level (through ASRV objects), */
-                                                  t->numRescalingsMultipliers,
-                                                  resourceListPtr,
-                                                  resourceListLen,
-                                                  t->resourcePref,
-                                                  t->resourceReq,
-                                                  &beagleInstanceDetails);
+                              t->numPartialStructs,
+                              t->numStateCodeArrays,
+                              t->numStates,
+                              t->numPatterns,
+                              t->numEigenStorage,
+                              t->numProbMats,
+                              1, /* we take care of the asrv at a higher level (through ASRV objects), */
+                              t->numRescalingsMultipliers,
+                              resourceListPtr,
+                              resourceListLen,
+                              t->resourcePref,
+                              t->resourceReq,
+                              &beagleInstanceDetails);
 	PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance returned %d\n", rc);
     if (rc < 0) {
 		PYTBEAGLEHON_DEBUG_PRINTF1("beagleCreateInstance failed with error code %d\n", rc);
@@ -763,19 +763,13 @@ int setQMatForHandle(long handle, int probMatIndex, const double ** newQMat) {
 
 int setQMatForLCI(const struct LikeCalculatorInstance * lci, int probMatIndex, const double ** newQMat) {
     DSCTModelObj * dsct_model_obj;
-    int i, j;
     if (lci == 0L || probMatIndex >= lci->numProbMats) {
 		return BEAGLE_ERROR_OUT_OF_RANGE;
     }
     dsct_model_obj = lci->probModelArray[probMatIndex];
-    for (i = 0; i < lci->numStates; ++i) {
-        for (j = 0; j < lci->numStates; ++j) {
-            dsct_model_obj->qMat[i][j] = newQMat[i][j];
-        }
-    }
-    dsct_model_obj->eigenCalcIsDirty = 1;
-    return 0;
+    return set_q_mat_for_model(dsct_model_obj, newQMat);
 }
+
 
 
 int calcPrMatsForLCI(const struct LikeCalculatorInstance * lci, 
@@ -832,6 +826,7 @@ int fetchPrMat(long handle, int probMatIndex, double * flattenedMat) {
     return rc;
 }
 
+///0 to stateCount - 1 (missing = stateCount).
 int setStateCodeArray(long handle, int stateCodeArrayIndex, const int * stateCodes) {
     const struct LikeCalculatorInstance * lci;
     int rc;

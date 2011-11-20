@@ -30,6 +30,16 @@ void cdsctm_dtor(DSCTModelObj* dsct_model);
 
 #endif
 
+int set_q_mat_for_model(DSCTModelObj * dsct_model_obj, const double ** newQMat) {
+    int i, j;
+    for (i = 0; i < dsct_model_obj->dim; ++i) {
+        for (j = 0; j < dsct_model_obj->dim; ++j) {
+            dsct_model_obj->qMat[i][j] = newQMat[i][j];
+        }
+    }
+    dsct_model_obj->eigenCalcIsDirty = 1;
+    return 0;
+}
 
 
 DSCTModelObj * dsctModelNew(unsigned dim)  {

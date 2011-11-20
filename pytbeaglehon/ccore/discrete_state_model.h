@@ -54,7 +54,7 @@ const DSCTModelObj ** getModelList(long instanceHandle, unsigned int *numModels)
 int set_eigen_index_for_model(DSCTModelObj * dsct_model_obj, int eigenIndex);
 int calc_eigen_mat(DSCTModelObj * dsct_model_obj, int eigenIndex);
 int recalc_eigen_mat(DSCTModelObj *mod);
-
+int set_q_mat_for_model(DSCTModelObj * dsct_model_obj, const double ** newQMat);
 
 
 
