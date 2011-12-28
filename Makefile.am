@@ -1,3 +1,3 @@
-ACLOCAL_AMFLAGS="-Iconfig"
+ACLOCAL_AMFLAGS="-I config"
 SUBDIRS = pytbeaglehon c_example
 
